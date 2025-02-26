@@ -20,13 +20,6 @@ interface MenuItem {
   image_url: string
 }
 
-const EMOJI_LIST = {
-  food: ['🍕', '🍔', '🍟', '🌭', '🍿', '🥪', '🥨', '🥖', '🥐', '🥯', '🥗', '🥙', '🥚', '🍳', '🥘', '🍲', '🥣', '🥗'],
-  drinks: ['☕', '🍵', '🥤', '🧃', '🧉', '🍶', '🍺', '🍷', '🥂', '🥃', '🍸', '🍹', '🧊'],
-  desserts: ['🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🧁', '🥧', '🍰', '🍫', '🍬', '🍭', '🍮'],
-  other: ['🥓', '🥩', '🍗', '🍖', '🌮', '🌯', '🥟', '🥠', '🥡', '🍱', '🍘', '🍙', '🍚', '🍛', '🍜', '🍝', '🍣', '🍤', '🍥']
-}
-
 export default function EditItemPage({ params }: { params: { id: string } }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -37,8 +30,6 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
-  const [selectedEmoji, setSelectedEmoji] = useState('')
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   const router = useRouter()
   const supabase = createClientComponentClient()
@@ -86,14 +77,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
 
       if (error) throw error
       if (data) {
-        // Extract emoji if present
-        const nameMatch = data.name.match(/^([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}])\s(.+)$/u)
-        if (nameMatch) {
-          setSelectedEmoji(nameMatch[1])
-          setName(nameMatch[2])
-        } else {
-          setName(data.name)
-        }
+        setName(data.name)
         setDescription(data.description || '')
         setPrice(data.price.toString())
         setCategoryId(data.category_id.toString())
@@ -141,12 +125,10 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
         finalImageUrl = await uploadImage(uploadedImage)
       }
 
-      const itemName = selectedEmoji ? `${selectedEmoji} ${name}` : name
-
       const { error } = await supabase
         .from('menu_items')
         .update({
-          name: itemName,
+          name,
           description,
           price: parseFloat(price),
           category_id: parseInt(categoryId),
@@ -192,52 +174,15 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
               <label htmlFor="name" className="block text-sm font-medium text-[#141414]">
                 Ürün Adı
               </label>
-              <div className="flex gap-2 items-center">
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="p-2 border rounded-md text-[#141414] hover:bg-gray-50"
-                  >
-                    {selectedEmoji || '😋'} Emoji Seç
-                  </button>
-                  {showEmojiPicker && (
-                    <div className="absolute top-full left-0 mt-1 p-2 bg-white border rounded-md shadow-lg z-10">
-                      <div className="grid grid-cols-6 gap-1">
-                        {Object.entries(EMOJI_LIST).map(([category, emojis]) => (
-                          <div key={category} className="col-span-6">
-                            <div className="font-medium text-[#141414] mb-1">{category}</div>
-                            <div className="grid grid-cols-6 gap-1">
-                              {emojis.map((emoji) => (
-                                <button
-                                  key={emoji}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedEmoji(emoji)
-                                    setShowEmojiPicker(false)
-                                  }}
-                                  className="p-1 hover:bg-gray-100 rounded"
-                                >
-                                  {emoji}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="Ürün adını girin"
-                  className="flex-1 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-                />
-              </div>
+              <input
+                type="text"
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                placeholder="Ürün adını girin"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+              />
             </div>
 
             <div>

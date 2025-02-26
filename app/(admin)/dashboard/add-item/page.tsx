@@ -9,7 +9,6 @@ import { useDropzone } from 'react-dropzone'
 interface Category {
   id: number
   name: string
-  emoji: string
 }
 
 export default function AddItemPage() {
@@ -48,7 +47,7 @@ export default function AddItemPage() {
     try {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name, emoji')
+        .select('id, name')
         .order('name')
 
       if (error) throw error
@@ -196,7 +195,7 @@ export default function AddItemPage() {
                 <option value="">Kategori Seçin</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
-                    {category.emoji} {category.name}
+                    {category.name}
                   </option>
                 ))}
               </select>

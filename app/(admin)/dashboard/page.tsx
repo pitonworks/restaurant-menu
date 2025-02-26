@@ -9,7 +9,6 @@ import Link from 'next/link'
 interface Category {
   id: number
   name: string
-  emoji: string
   created_at: string
 }
 
@@ -36,9 +35,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [newCategory, setNewCategory] = useState("")
-  const [selectedEmoji, setSelectedEmoji] = useState("")
   const [isAddingCategory, setIsAddingCategory] = useState(false)
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
 
   const router = useRouter()
   const supabase = createClientComponentClient()
@@ -80,8 +78,7 @@ export default function DashboardPage() {
       const { data, error } = await supabase
         .from('categories')
         .insert([{ 
-          name: newCategory.trim(),
-          emoji: selectedEmoji 
+          name: newCategory.trim()
         }])
         .select()
 
@@ -89,11 +86,29 @@ export default function DashboardPage() {
 
       setCategories([...categories, data[0]])
       setNewCategory("")
-      setSelectedEmoji("")
       setIsAddingCategory(false)
-      setShowEmojiPicker(false)
     } catch (error) {
       console.error('Error adding category:', error)
+    }
+  }
+
+  const handleEditCategory = async () => {
+    if (!editingCategory || !editingCategory.name.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({ name: editingCategory.name.trim() })
+        .eq('id', editingCategory.id)
+
+      if (error) throw error
+
+      setCategories(categories.map(cat => 
+        cat.id === editingCategory.id ? editingCategory : cat
+      ))
+      setEditingCategory(null)
+    } catch (error) {
+      console.error('Error updating category:', error)
     }
   }
 
@@ -203,41 +218,6 @@ export default function DashboardPage() {
               {isAddingCategory && (
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        className="p-3 border rounded-md text-[#141414] hover:bg-gray-50"
-                      >
-                        {selectedEmoji || '😋'} Emoji
-                      </button>
-                      {showEmojiPicker && (
-                        <div className="absolute top-full left-0 mt-1 p-4 bg-white border rounded-md shadow-lg z-10">
-                          <div className="grid grid-cols-6 gap-2">
-                            {Object.entries(EMOJI_LIST).map(([category, emojis]) => (
-                              <div key={category} className="col-span-6">
-                                <div className="font-medium text-[#141414] mb-2">{category}</div>
-                                <div className="grid grid-cols-6 gap-2">
-                                  {emojis.map((emoji) => (
-                                    <button
-                                      key={emoji}
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedEmoji(emoji)
-                                        setShowEmojiPicker(false)
-                                      }}
-                                      className="p-2 hover:bg-gray-100 rounded text-xl"
-                                    >
-                                      {emoji}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
                     <input
                       type="text"
                       value={newCategory}
@@ -257,8 +237,6 @@ export default function DashboardPage() {
                       onClick={() => {
                         setIsAddingCategory(false)
                         setNewCategory("")
-                        setSelectedEmoji("")
-                        setShowEmojiPicker(false)
                       }}
                       className="px-3 py-2 bg-gray-200 text-[#141414] rounded hover:bg-gray-300"
                     >
@@ -281,25 +259,63 @@ export default function DashboardPage() {
                     key={category.id}
                     className="flex items-center justify-between group"
                   >
-                    <button
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`flex-1 text-left px-3 py-2 rounded-lg text-[#141414] ${
-                        selectedCategory === category.id ? 'bg-gray-100' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      {category.emoji} {category.name}
-                      <span className="text-gray-500 text-sm ml-2">
-                        ({menuItems.filter(item => item.category_id === category.id).length})
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCategory(category.id)}
-                      className="hidden group-hover:block p-2 text-red-600 hover:text-red-800"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    {editingCategory?.id === category.id ? (
+                      <div className="flex-1 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editingCategory.name}
+                          onChange={(e) => setEditingCategory({
+                            ...editingCategory,
+                            name: e.target.value
+                          })}
+                          className="flex-1 px-3 py-2 border rounded text-[#141414] placeholder-gray-500"
+                        />
+                        <button
+                          onClick={handleEditCategory}
+                          className="px-3 py-2 bg-[#141414] text-white rounded hover:bg-gray-800"
+                        >
+                          Kaydet
+                        </button>
+                        <button
+                          onClick={() => setEditingCategory(null)}
+                          className="px-3 py-2 bg-gray-200 text-[#141414] rounded hover:bg-gray-300"
+                        >
+                          İptal
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setSelectedCategory(category.id)}
+                          className={`flex-1 text-left px-3 py-2 rounded-lg text-[#141414] ${
+                            selectedCategory === category.id ? 'bg-gray-100' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          {category.name}
+                          <span className="text-gray-500 text-sm ml-2">
+                            ({menuItems.filter(item => item.category_id === category.id).length})
+                          </span>
+                        </button>
+                        <div className="hidden group-hover:flex items-center">
+                          <button
+                            onClick={() => setEditingCategory(category)}
+                            className="p-2 text-blue-600 hover:text-blue-800"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(category.id)}
+                            className="p-2 text-red-600 hover:text-red-800"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
