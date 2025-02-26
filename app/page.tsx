@@ -67,32 +67,32 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <header className="sticky top-0 bg-white border-b z-50">
+        <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">Restoran Menü</h1>
+            <h1 className="text-xl font-medium text-[#141414]">Menü</h1>
             <Link 
               href="/login" 
-              className="text-sm bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+              className="text-sm text-gray-600 hover:text-gray-900"
             >
-              Admin Girişi
+              Admin
             </Link>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-2xl mx-auto px-4 py-6">
         {/* Categories */}
-        <div className="flex overflow-x-auto pb-4 mb-8 gap-2 scrollbar-hide">
+        <div className="flex overflow-x-auto gap-2 py-4 mb-6 no-scrollbar">
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`flex-none px-4 py-2 rounded-full border-2 ${
+            className={`flex-none px-4 py-2 rounded-full text-sm transition-colors ${
               selectedCategory === null
-                ? 'border-black bg-black text-white'
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'bg-[#141414] text-white'
+                : 'bg-gray-100 text-[#141414] hover:bg-gray-200'
             }`}
           >
             Tüm Menü
@@ -101,10 +101,10 @@ export default function HomePage() {
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`flex-none px-4 py-2 rounded-full border-2 ${
+              className={`flex-none px-4 py-2 rounded-full text-sm transition-colors ${
                 selectedCategory === category.id
-                  ? 'border-black bg-black text-white'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? 'bg-[#141414] text-white'
+                  : 'bg-gray-100 text-[#141414] hover:bg-gray-200'
               }`}
             >
               {category.name}
@@ -112,15 +112,20 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Menu Items Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Menu Items */}
+        <div className="space-y-6">
           {filteredMenuItems.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              className="flex items-start space-x-4 py-4 border-b border-gray-100 last:border-0"
             >
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
+                <p className="text-gray-600 text-sm mt-1">{item.description}</p>
+                <p className="text-[#141414] font-medium mt-2">₺{item.price}</p>
+              </div>
               {item.image_url && (
-                <div className="relative h-48 w-full">
+                <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
                   <Image
                     src={item.image_url}
                     alt={item.name}
@@ -129,23 +134,13 @@ export default function HomePage() {
                   />
                 </div>
               )}
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-semibold">{item.name}</h3>
-                  <span className="text-lg font-bold">₺{item.price}</span>
-                </div>
-                <p className="text-gray-600 text-sm mb-2">{item.description}</p>
-                <div className="text-sm text-gray-500">
-                  {categories.find(cat => cat.id === item.category_id)?.name}
-                </div>
-              </div>
             </div>
           ))}
         </div>
 
         {filteredMenuItems.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">
+            <p className="text-gray-500">
               Bu kategoride henüz ürün bulunmuyor
             </p>
           </div>
@@ -153,10 +148,20 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-500 text-sm">
-            © {new Date().getFullYear()} Restoran Menü. Tüm hakları saklıdır.
+      <footer className="border-t">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-500">
+              © {new Date().getFullYear()} Restaurant Menu
+            </p>
+            <div className="flex items-center space-x-4">
+              <Link href="/qr" className="text-sm text-gray-600 hover:text-gray-900">
+                QR Kod
+              </Link>
+              <Link href="/about" className="text-sm text-gray-600 hover:text-gray-900">
+                Hakkında
+              </Link>
+            </div>
           </div>
         </div>
       </footer>
