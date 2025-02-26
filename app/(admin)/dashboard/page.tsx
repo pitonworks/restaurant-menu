@@ -9,6 +9,7 @@ import Link from 'next/link'
 interface Category {
   id: number
   name: string
+  emoji: string
   created_at: string
 }
 
@@ -22,13 +23,22 @@ interface MenuItem {
   created_at: string
 }
 
+const EMOJI_LIST = {
+  food: ['🍕', '🍔', '🍟', '🌭', '🍿', '🥪', '🥨', '🥖', '🥐', '🥯', '🥗', '🥙', '🥚', '🍳', '🥘', '🍲', '🥣', '🥗'],
+  drinks: ['☕', '🍵', '🥤', '🧃', '🧉', '🍶', '🍺', '🍷', '🥂', '🥃', '🍸', '🍹', '🧊'],
+  desserts: ['🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🧁', '🥧', '🍰', '🍫', '🍬', '🍭', '🍮'],
+  other: ['🥓', '🥩', '🍗', '🍖', '🌮', '🌯', '🥟', '🥠', '🥡', '🍱', '🍘', '🍙', '🍚', '🍛', '🍜', '🍝', '🍣', '🍤', '🍥']
+}
+
 export default function DashboardPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [newCategory, setNewCategory] = useState("")
+  const [selectedEmoji, setSelectedEmoji] = useState("")
   const [isAddingCategory, setIsAddingCategory] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   const router = useRouter()
   const supabase = createClientComponentClient()
@@ -69,14 +79,19 @@ export default function DashboardPage() {
     try {
       const { data, error } = await supabase
         .from('categories')
-        .insert([{ name: newCategory.trim() }])
+        .insert([{ 
+          name: newCategory.trim(),
+          emoji: selectedEmoji 
+        }])
         .select()
 
       if (error) throw error
 
       setCategories([...categories, data[0]])
       setNewCategory("")
+      setSelectedEmoji("")
       setIsAddingCategory(false)
+      setShowEmojiPicker(false)
     } catch (error) {
       console.error('Error adding category:', error)
     }
@@ -186,29 +201,70 @@ export default function DashboardPage() {
                 </button>
               </div>
               {isAddingCategory && (
-                <div className="flex items-center gap-2 mb-4">
-                  <input
-                    type="text"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    placeholder="Kategori adı"
-                    className="flex-1 px-3 py-1 border rounded text-[#141414] placeholder-gray-500"
-                  />
-                  <button
-                    onClick={handleAddCategory}
-                    className="px-3 py-1 bg-[#141414] text-white rounded hover:bg-gray-800"
-                  >
-                    Ekle
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsAddingCategory(false)
-                      setNewCategory("")
-                    }}
-                    className="px-3 py-1 bg-gray-200 text-[#141414] rounded hover:bg-gray-300"
-                  >
-                    İptal
-                  </button>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className="p-3 border rounded-md text-[#141414] hover:bg-gray-50"
+                      >
+                        {selectedEmoji || '😋'} Emoji
+                      </button>
+                      {showEmojiPicker && (
+                        <div className="absolute top-full left-0 mt-1 p-4 bg-white border rounded-md shadow-lg z-10">
+                          <div className="grid grid-cols-6 gap-2">
+                            {Object.entries(EMOJI_LIST).map(([category, emojis]) => (
+                              <div key={category} className="col-span-6">
+                                <div className="font-medium text-[#141414] mb-2">{category}</div>
+                                <div className="grid grid-cols-6 gap-2">
+                                  {emojis.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedEmoji(emoji)
+                                        setShowEmojiPicker(false)
+                                      }}
+                                      className="p-2 hover:bg-gray-100 rounded text-xl"
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="Kategori adı"
+                      className="flex-1 px-3 py-2 border rounded text-[#141414] placeholder-gray-500"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAddCategory}
+                      className="flex-1 px-3 py-2 bg-[#141414] text-white rounded hover:bg-gray-800"
+                    >
+                      Ekle
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAddingCategory(false)
+                        setNewCategory("")
+                        setSelectedEmoji("")
+                        setShowEmojiPicker(false)
+                      }}
+                      className="px-3 py-2 bg-gray-200 text-[#141414] rounded hover:bg-gray-300"
+                    >
+                      İptal
+                    </button>
+                  </div>
                 </div>
               )}
               <div className="space-y-2">
@@ -231,7 +287,7 @@ export default function DashboardPage() {
                         selectedCategory === category.id ? 'bg-gray-100' : 'hover:bg-gray-50'
                       }`}
                     >
-                      {category.name}
+                      {category.emoji} {category.name}
                       <span className="text-gray-500 text-sm ml-2">
                         ({menuItems.filter(item => item.category_id === category.id).length})
                       </span>

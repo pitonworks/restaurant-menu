@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useDropzone } from 'react-dropzone'
 
 interface Category {
   id: number
@@ -19,6 +20,13 @@ interface MenuItem {
   image_url: string
 }
 
+const EMOJI_LIST = {
+  food: ['🍕', '🍔', '🍟', '🌭', '🍿', '🥪', '🥨', '🥖', '🥐', '🥯', '🥗', '🥙', '🥚', '🍳', '🥘', '🍲', '🥣', '🥗'],
+  drinks: ['☕', '🍵', '🥤', '🧃', '🧉', '🍶', '🍺', '🍷', '🥂', '🥃', '🍸', '🍹', '🧊'],
+  desserts: ['🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🧁', '🥧', '🍰', '🍫', '🍬', '🍭', '🍮'],
+  other: ['🥓', '🥩', '🍗', '🍖', '🌮', '🌯', '🥟', '🥠', '🥡', '🍱', '🍘', '🍙', '🍚', '🍛', '🍜', '🍝', '🍣', '🍤', '🍥']
+}
+
 export default function EditItemPage({ params }: { params: { id: string } }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -28,9 +36,26 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null)
+  const [selectedEmoji, setSelectedEmoji] = useState('')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   const router = useRouter()
   const supabase = createClientComponentClient()
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      setUploadedImage(acceptedFiles[0])
+    }
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif']
+    },
+    maxFiles: 1
+  })
 
   useEffect(() => {
     fetchCategories()
@@ -61,7 +86,14 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
 
       if (error) throw error
       if (data) {
-        setName(data.name)
+        // Extract emoji if present
+        const nameMatch = data.name.match(/^([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}])\s(.+)$/u)
+        if (nameMatch) {
+          setSelectedEmoji(nameMatch[1])
+          setName(nameMatch[2])
+        } else {
+          setName(data.name)
+        }
         setDescription(data.description || '')
         setPrice(data.price.toString())
         setCategoryId(data.category_id.toString())
@@ -74,20 +106,51 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
     }
   }
 
+  const uploadImage = async (file: File) => {
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Math.random()}.${fileExt}`
+      const filePath = `${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('menu-images')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('menu-images')
+        .getPublicUrl(filePath)
+
+      return publicUrl
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      throw error
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     try {
+      let finalImageUrl = imageUrl
+
+      if (uploadedImage) {
+        finalImageUrl = await uploadImage(uploadedImage)
+      }
+
+      const itemName = selectedEmoji ? `${selectedEmoji} ${name}` : name
+
       const { error } = await supabase
         .from('menu_items')
         .update({
-          name,
+          name: itemName,
           description,
           price: parseFloat(price),
           category_id: parseInt(categoryId),
-          image_url: imageUrl,
+          image_url: finalImageUrl,
         })
         .eq('id', params.id)
 
@@ -117,7 +180,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
           <h1 className="text-2xl font-bold text-[#141414]">Ürün Düzenle</h1>
           <Link
             href="/dashboard"
-            className="text-gray-600 hover:text-gray-900"
+            className="text-[#141414] hover:text-gray-900"
           >
             Geri Dön
           </Link>
@@ -129,15 +192,52 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
               <label htmlFor="name" className="block text-sm font-medium text-[#141414]">
                 Ürün Adı
               </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="Ürün adını girin"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500"
-              />
+              <div className="flex gap-2 items-center">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="p-2 border rounded-md text-[#141414] hover:bg-gray-50"
+                  >
+                    {selectedEmoji || '😋'} Emoji Seç
+                  </button>
+                  {showEmojiPicker && (
+                    <div className="absolute top-full left-0 mt-1 p-2 bg-white border rounded-md shadow-lg z-10">
+                      <div className="grid grid-cols-6 gap-1">
+                        {Object.entries(EMOJI_LIST).map(([category, emojis]) => (
+                          <div key={category} className="col-span-6">
+                            <div className="font-medium text-[#141414] mb-1">{category}</div>
+                            <div className="grid grid-cols-6 gap-1">
+                              {emojis.map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedEmoji(emoji)
+                                    setShowEmojiPicker(false)
+                                  }}
+                                  className="p-1 hover:bg-gray-100 rounded"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  placeholder="Ürün adını girin"
+                  className="flex-1 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                />
+              </div>
             </div>
 
             <div>
@@ -150,7 +250,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="Ürün açıklamasını girin"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
               />
             </div>
 
@@ -171,7 +271,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
                   step="0.01"
                   min="0"
                   placeholder="0.00"
-                  className="block w-full pl-7 rounded-md border-gray-300 focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500"
+                  className="block w-full pl-7 rounded-md border-gray-300 focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
                 />
               </div>
             </div>
@@ -197,17 +297,46 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
             </div>
 
             <div>
-              <label htmlFor="imageUrl" className="block text-sm font-medium text-[#141414]">
-                Görsel URL (İsteğe Bağlı)
+              <label className="block text-sm font-medium text-[#141414] mb-2">
+                Görsel
               </label>
-              <input
-                type="url"
-                id="imageUrl"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500"
-              />
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                  isDragActive ? 'border-[#141414] bg-gray-50' : 'border-gray-300 hover:border-[#141414]'
+                }`}
+              >
+                <input {...getInputProps()} />
+                {uploadedImage ? (
+                  <div className="text-[#141414]">
+                    <p>Seçilen dosya: {uploadedImage.name}</p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setUploadedImage(null)
+                      }}
+                      className="text-red-600 hover:text-red-800 mt-2"
+                    >
+                      Görseli Kaldır
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-gray-600">
+                    <p>Görsel yüklemek için tıklayın veya sürükleyip bırakın</p>
+                    <p className="text-sm mt-1">PNG, JPG, GIF (max. 10MB)</p>
+                  </div>
+                )}
+              </div>
+              {imageUrl && (
+                <input
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="veya görsel URL'si girin"
+                  className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                />
+              )}
             </div>
           </div>
 
