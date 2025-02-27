@@ -5,10 +5,13 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 
 interface Category {
   id: number
   name: string
+  image_url: string
+  order: number
   created_at: string
 }
 
@@ -147,6 +150,38 @@ export default function DashboardPage() {
     }
   }
 
+  const handleDragEnd = async (result: any) => {
+    if (!result.destination) return
+
+    const items = Array.from(categories)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
+
+    // Update the order of items
+    const updatedItems = items.map((item, index) => ({
+      ...item,
+      order: index
+    }))
+
+    setCategories(updatedItems)
+
+    // Update the order in the database
+    try {
+      const updates = updatedItems.map((item) => ({
+        id: item.id,
+        order: item.order
+      }))
+
+      const { error } = await supabase
+        .from('categories')
+        .upsert(updates)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Error updating category order:', error)
+    }
+  }
+
   const filteredMenuItems = selectedCategory
     ? menuItems.filter(item => item.category_id === selectedCategory)
     : menuItems
@@ -245,80 +280,94 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                <button
-                  onClick={() => setSelectedCategory(null)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-[#141414] ${
-                    selectedCategory === null ? 'bg-gray-100' : 'hover:bg-gray-50'
-                  }`}
-                >
-                  Tüm Kategoriler
-                </button>
-                {categories.map((category) => (
-                  <div
-                    key={category.id}
-                    className="flex items-center justify-between group"
-                  >
-                    {editingCategory?.id === category.id ? (
-                      <div className="flex-1 flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editingCategory.name}
-                          onChange={(e) => setEditingCategory({
-                            ...editingCategory,
-                            name: e.target.value
-                          })}
-                          className="flex-1 px-3 py-2 border rounded text-[#141414] placeholder-gray-500"
-                        />
-                        <button
-                          onClick={handleEditCategory}
-                          className="px-3 py-2 bg-[#141414] text-white rounded hover:bg-gray-800"
-                        >
-                          Kaydet
-                        </button>
-                        <button
-                          onClick={() => setEditingCategory(null)}
-                          className="px-3 py-2 bg-gray-200 text-[#141414] rounded hover:bg-gray-300"
-                        >
-                          İptal
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => setSelectedCategory(category.id)}
-                          className={`flex-1 text-left px-3 py-2 rounded-lg text-[#141414] ${
-                            selectedCategory === category.id ? 'bg-gray-100' : 'hover:bg-gray-50'
-                          }`}
-                        >
-                          {category.name}
-                          <span className="text-gray-500 text-sm ml-2">
-                            ({menuItems.filter(item => item.category_id === category.id).length})
-                          </span>
-                        </button>
-                        <div className="hidden group-hover:flex items-center">
-                          <button
-                            onClick={() => setEditingCategory(category)}
-                            className="p-2 text-blue-600 hover:text-blue-800"
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="categories">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="space-y-2"
+                    >
+                      <button
+                        onClick={() => setSelectedCategory(null)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-[#141414] ${
+                          selectedCategory === null ? 'bg-gray-100' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        Tüm Kategoriler
+                      </button>
+                      {categories
+                        .sort((a, b) => a.order - b.order)
+                        .map((category, index) => (
+                          <Draggable
+                            key={category.id}
+                            draggableId={category.id.toString()}
+                            index={index}
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCategory(category.id)}
-                            className="p-2 text-red-600 hover:text-red-800"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="flex items-center justify-between group bg-white rounded-lg"
+                              >
+                                <div className="flex items-center flex-1">
+                                  <div className="p-2 text-gray-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16" />
+                                    </svg>
+                                  </div>
+                                  <button
+                                    onClick={() => setSelectedCategory(category.id)}
+                                    className={`flex-1 text-left px-3 py-2 rounded-lg text-[#141414] ${
+                                      selectedCategory === category.id ? 'bg-gray-100' : 'hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <div className="flex items-center space-x-3">
+                                      {category.image_url && (
+                                        <div className="relative w-8 h-8 rounded overflow-hidden">
+                                          <Image
+                                            src={category.image_url}
+                                            alt={category.name}
+                                            fill
+                                            className="object-cover"
+                                          />
+                                        </div>
+                                      )}
+                                      <span>{category.name}</span>
+                                      <span className="text-gray-500 text-sm">
+                                        ({menuItems.filter(item => item.category_id === category.id).length})
+                                      </span>
+                                    </div>
+                                  </button>
+                                </div>
+                                <div className="hidden group-hover:flex items-center pr-2">
+                                  <Link
+                                    href={`/dashboard/edit-category/${category.id}`}
+                                    className="p-2 text-blue-600 hover:text-blue-800"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                  </Link>
+                                  <button
+                                    onClick={() => handleDeleteCategory(category.id)}
+                                    className="p-2 text-red-600 hover:text-red-800"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             </div>
           </div>
 
