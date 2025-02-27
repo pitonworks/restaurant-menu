@@ -64,23 +64,49 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
   const uploadImage = async (file: File) => {
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random()}.${fileExt}`
+      // Dosya boyutunu kontrol et (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Dosya boyutu 10MB\'dan küçük olmalıdır')
+      }
+
+      const fileExt = file.name.split('.').pop()?.toLowerCase()
+      // Dosya uzantısını kontrol et
+      if (!['jpg', 'jpeg', 'png', 'gif'].includes(fileExt || '')) {
+        throw new Error('Sadece JPG, PNG ve GIF dosyaları yüklenebilir')
+      }
+
+      const fileName = `${Date.now()}.${fileExt}`
       const filePath = `${fileName}`
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading file:', fileName)
+
+      const { error: uploadError, data } = await supabase.storage
         .from('category-images')
-        .upload(filePath, file)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        throw uploadError
+      }
 
-      const { data: { publicUrl } } = supabase.storage
+      console.log('Upload successful:', data)
+
+      const { data: { publicUrl }, error: urlError } = supabase.storage
         .from('category-images')
         .getPublicUrl(filePath)
 
+      if (urlError) {
+        console.error('URL error:', urlError)
+        throw urlError
+      }
+
+      console.log('Public URL:', publicUrl)
       return publicUrl
     } catch (error) {
-      console.error('Error uploading image:', error)
+      console.error('Error in uploadImage:', error)
       throw error
     }
   }
@@ -94,10 +120,16 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       let finalImageUrl = imageUrl
 
       if (uploadedImage) {
-        finalImageUrl = await uploadImage(uploadedImage)
+        try {
+          finalImageUrl = await uploadImage(uploadedImage)
+        } catch (uploadError: any) {
+          setError(uploadError.message || 'Görsel yüklenirken bir hata oluştu')
+          setLoading(false)
+          return
+        }
       }
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('categories')
         .update({
           name,
@@ -105,12 +137,15 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
         })
         .eq('id', params.id)
 
-      if (error) throw error
+      if (updateError) {
+        console.error('Update error:', updateError)
+        throw updateError
+      }
 
       router.push('/dashboard')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating category:', error)
-      setError('Kategori güncellenirken bir hata oluştu')
+      setError(error.message || 'Kategori güncellenirken bir hata oluştu')
     } finally {
       setLoading(false)
     }
