@@ -75,19 +75,12 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
         throw new Error('Sadece JPG, PNG ve GIF dosyaları yüklenebilir')
       }
 
-      const fileName = `${Date.now()}.${fileExt}`
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
       const filePath = `${fileName}`
 
-      console.log('Uploading file:', fileName)
+      console.log('Attempting to upload file:', fileName)
 
-      // Önce bucket'ın varlığını kontrol et
-      const { data: buckets } = await supabase.storage.listBuckets()
-      const categoryBucket = buckets?.find(b => b.name === 'category-images')
-      
-      if (!categoryBucket) {
-        throw new Error('category-images bucket\'ı bulunamadı. Lütfen Supabase\'de bucket\'ı oluşturun.')
-      }
-
+      // Doğrudan yüklemeyi dene
       const { error: uploadError, data } = await supabase.storage
         .from('category-images')
         .upload(filePath, file, {
@@ -102,12 +95,24 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
       console.log('Upload successful:', data)
 
-      const { data: urlData } = supabase.storage
+      // Public URL'i al
+      const { data: { publicUrl } } = supabase.storage
         .from('category-images')
         .getPublicUrl(filePath)
 
-      const publicUrl = urlData.publicUrl
-      console.log('Public URL:', publicUrl)
+      console.log('Generated public URL:', publicUrl)
+      
+      // URL'in erişilebilir olduğunu kontrol et
+      try {
+        const response = await fetch(publicUrl, { method: 'HEAD' })
+        if (!response.ok) {
+          throw new Error('Yüklenen görsele erişilemiyor')
+        }
+      } catch (error) {
+        console.error('URL accessibility check failed:', error)
+        throw new Error('Yüklenen görsele erişilemiyor')
+      }
+
       return publicUrl
     } catch (error: any) {
       console.error('Error in uploadImage:', error)
@@ -154,6 +159,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
         throw new Error(`Kategori güncelleme hatası: ${updateError.message}`)
       }
 
+      console.log('Category updated successfully')
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Error in handleSubmit:', error)
