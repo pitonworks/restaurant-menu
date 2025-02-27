@@ -163,39 +163,32 @@ export default function DashboardPage() {
     const [reorderedItem] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, reorderedItem)
 
-    // Update the order of items
+    // Sıralama numaralarını güncelle
     const updatedItems = items.map((item, index) => ({
       ...item,
       order: index
     }))
 
-    // Önce state'i güncelle
+    // State'i güncelle
     setCategories(updatedItems)
 
-    // Sonra veritabanını güncelle
     try {
-      const updates = updatedItems.map((item) => ({
-        id: item.id,
-        order: item.order
-      }))
+      // Her kategori için tek tek güncelleme yap
+      for (const item of updatedItems) {
+        const { error } = await supabase
+          .from('categories')
+          .update({ order: item.order })
+          .eq('id', item.id)
 
-      const { error } = await supabase
-        .from('categories')
-        .upsert(updates, { 
-          onConflict: 'id',
-          ignoreDuplicates: false
-        })
-
-      if (error) {
-        console.error('Error updating category orders:', error)
-        // Hata durumunda orijinal sıralamaya geri dön
-        fetchData()
-        return
+        if (error) {
+          console.error('Error updating category order:', error)
+          throw error
+        }
       }
     } catch (error) {
       console.error('Error updating category orders:', error)
       // Hata durumunda orijinal sıralamaya geri dön
-      fetchData()
+      await fetchData()
     }
   }
 
