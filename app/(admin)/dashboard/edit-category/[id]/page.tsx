@@ -80,6 +80,14 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
       console.log('Uploading file:', fileName)
 
+      // Önce bucket'ın varlığını kontrol et
+      const { data: buckets } = await supabase.storage.listBuckets()
+      const categoryBucket = buckets?.find(b => b.name === 'category-images')
+      
+      if (!categoryBucket) {
+        throw new Error('category-images bucket\'ı bulunamadı. Lütfen Supabase\'de bucket\'ı oluşturun.')
+      }
+
       const { error: uploadError, data } = await supabase.storage
         .from('category-images')
         .upload(filePath, file, {
@@ -88,26 +96,22 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
         })
 
       if (uploadError) {
-        console.error('Upload error:', uploadError)
-        throw uploadError
+        console.error('Upload error details:', uploadError)
+        throw new Error(`Görsel yükleme hatası: ${uploadError.message}`)
       }
 
       console.log('Upload successful:', data)
 
-      const { data: { publicUrl }, error: urlError } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from('category-images')
         .getPublicUrl(filePath)
 
-      if (urlError) {
-        console.error('URL error:', urlError)
-        throw urlError
-      }
-
+      const publicUrl = urlData.publicUrl
       console.log('Public URL:', publicUrl)
       return publicUrl
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in uploadImage:', error)
-      throw error
+      throw new Error(error.message || 'Görsel yüklenirken bir hata oluştu')
     }
   }
 
@@ -122,12 +126,20 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       if (uploadedImage) {
         try {
           finalImageUrl = await uploadImage(uploadedImage)
+          console.log('Successfully uploaded image, URL:', finalImageUrl)
         } catch (uploadError: any) {
-          setError(uploadError.message || 'Görsel yüklenirken bir hata oluştu')
+          console.error('Upload error:', uploadError)
+          setError(uploadError.message)
           setLoading(false)
           return
         }
       }
+
+      console.log('Updating category with data:', {
+        name,
+        image_url: finalImageUrl,
+        id: params.id
+      })
 
       const { error: updateError } = await supabase
         .from('categories')
@@ -138,13 +150,13 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
         .eq('id', params.id)
 
       if (updateError) {
-        console.error('Update error:', updateError)
-        throw updateError
+        console.error('Update error details:', updateError)
+        throw new Error(`Kategori güncelleme hatası: ${updateError.message}`)
       }
 
       router.push('/dashboard')
     } catch (error: any) {
-      console.error('Error updating category:', error)
+      console.error('Error in handleSubmit:', error)
       setError(error.message || 'Kategori güncellenirken bir hata oluştu')
     } finally {
       setLoading(false)
