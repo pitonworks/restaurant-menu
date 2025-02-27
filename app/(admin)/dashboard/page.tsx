@@ -78,16 +78,22 @@ export default function DashboardPage() {
     if (!newCategory.trim()) return
 
     try {
+      const maxOrder = Math.max(...categories.map(cat => cat.order ?? 0), -1)
+
       const { data, error } = await supabase
         .from('categories')
         .insert([{ 
-          name: newCategory.trim()
+          name: newCategory.trim(),
+          order: maxOrder + 1
         }])
         .select()
 
       if (error) throw error
 
-      setCategories([...categories, data[0]])
+      if (data) {
+        const newCategories = [...categories, data[0]].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        setCategories(newCategories)
+      }
       setNewCategory("")
       setIsAddingCategory(false)
     } catch (error) {
@@ -163,9 +169,10 @@ export default function DashboardPage() {
       order: index
     }))
 
+    // Önce state'i güncelle
     setCategories(updatedItems)
 
-    // Update the order in the database
+    // Sonra veritabanını güncelle
     try {
       const updates = updatedItems.map((item) => ({
         id: item.id,
@@ -174,11 +181,16 @@ export default function DashboardPage() {
 
       const { error } = await supabase
         .from('categories')
-        .upsert(updates, { onConflict: 'id' })
+        .upsert(updates, { 
+          onConflict: 'id',
+          ignoreDuplicates: false
+        })
 
       if (error) {
         console.error('Error updating category orders:', error)
-        throw error
+        // Hata durumunda orijinal sıralamaya geri dön
+        fetchData()
+        return
       }
     } catch (error) {
       console.error('Error updating category orders:', error)
@@ -301,77 +313,75 @@ export default function DashboardPage() {
                       >
                         Tüm Kategoriler
                       </button>
-                      {categories
-                        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                        .map((category, index) => (
-                          <Draggable
-                            key={category.id.toString()}
-                            draggableId={category.id.toString()}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`flex items-center justify-between group bg-white rounded-lg ${
-                                  snapshot.isDragging ? 'shadow-lg ring-2 ring-[#141414]' : ''
-                                }`}
-                              >
-                                <div className="flex items-center flex-1">
-                                  <div 
-                                    {...provided.dragHandleProps}
-                                    className="p-2 text-gray-400 cursor-grab hover:text-gray-600"
-                                  >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16" />
-                                    </svg>
+                      {categories.map((category, index) => (
+                        <Draggable
+                          key={category.id.toString()}
+                          draggableId={category.id.toString()}
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`flex items-center justify-between group bg-white rounded-lg ${
+                                snapshot.isDragging ? 'shadow-lg ring-2 ring-[#141414]' : ''
+                              }`}
+                            >
+                              <div className="flex items-center flex-1">
+                                <div 
+                                  {...provided.dragHandleProps}
+                                  className="p-2 text-gray-400 cursor-grab hover:text-gray-600"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16" />
+                                  </svg>
+                                </div>
+                                <button
+                                  onClick={() => setSelectedCategory(category.id)}
+                                  className={`flex-1 text-left px-3 py-2 rounded-lg text-[#141414] ${
+                                    selectedCategory === category.id ? 'bg-gray-100' : 'hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    {category.image_url && (
+                                      <div className="relative w-8 h-8 rounded overflow-hidden">
+                                        <Image
+                                          src={category.image_url}
+                                          alt={category.name}
+                                          fill
+                                          className="object-cover"
+                                        />
+                                      </div>
+                                    )}
+                                    <span>{category.name}</span>
+                                    <span className="text-gray-500 text-sm">
+                                      ({menuItems.filter(item => item.category_id === category.id).length})
+                                    </span>
                                   </div>
-                                  <button
-                                    onClick={() => setSelectedCategory(category.id)}
-                                    className={`flex-1 text-left px-3 py-2 rounded-lg text-[#141414] ${
-                                      selectedCategory === category.id ? 'bg-gray-100' : 'hover:bg-gray-50'
-                                    }`}
-                                  >
-                                    <div className="flex items-center space-x-3">
-                                      {category.image_url && (
-                                        <div className="relative w-8 h-8 rounded overflow-hidden">
-                                          <Image
-                                            src={category.image_url}
-                                            alt={category.name}
-                                            fill
-                                            className="object-cover"
-                                          />
-                                        </div>
-                                      )}
-                                      <span>{category.name}</span>
-                                      <span className="text-gray-500 text-sm">
-                                        ({menuItems.filter(item => item.category_id === category.id).length})
-                                      </span>
-                                    </div>
-                                  </button>
-                                </div>
-                                <div className="hidden group-hover:flex items-center pr-2">
-                                  <Link
-                                    href={`/dashboard/edit-category/${category.id}`}
-                                    className="p-2 text-blue-600 hover:text-blue-800"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                    </svg>
-                                  </Link>
-                                  <button
-                                    onClick={() => handleDeleteCategory(category.id)}
-                                    className="p-2 text-red-600 hover:text-red-800"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                  </button>
-                                </div>
+                                </button>
                               </div>
-                            )}
-                          </Draggable>
-                        ))}
+                              <div className="hidden group-hover:flex items-center pr-2">
+                                <Link
+                                  href={`/dashboard/edit-category/${category.id}`}
+                                  className="p-2 text-blue-600 hover:text-blue-800"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                </Link>
+                                <button
+                                  onClick={() => handleDeleteCategory(category.id)}
+                                  className="p-2 text-red-600 hover:text-red-800"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
                       {provided.placeholder}
                     </div>
                   )}
