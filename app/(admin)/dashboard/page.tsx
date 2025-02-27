@@ -49,7 +49,7 @@ export default function DashboardPage() {
       const { data: categoriesData } = await supabase
         .from('categories')
         .select('*')
-        .order('created_at', { ascending: true })
+        .order('order', { ascending: true })
       
       const { data: menuItemsData } = await supabase
         .from('menu_items')
@@ -174,11 +174,16 @@ export default function DashboardPage() {
 
       const { error } = await supabase
         .from('categories')
-        .upsert(updates)
+        .upsert(updates, { onConflict: 'id' })
 
-      if (error) throw error
+      if (error) {
+        console.error('Error updating category orders:', error)
+        throw error
+      }
     } catch (error) {
-      console.error('Error updating category order:', error)
+      console.error('Error updating category orders:', error)
+      // Hata durumunda orijinal sıralamaya geri dön
+      fetchData()
     }
   }
 
@@ -237,9 +242,9 @@ export default function DashboardPage() {
           <p className="text-gray-600">Restoranınızın menüsünü buradan yönetin</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Sidebar - Now wider */}
+          <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold text-[#141414]">Kategoriler</h3>
@@ -286,7 +291,7 @@ export default function DashboardPage() {
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className="space-y-2"
+                      className="space-y-2 max-h-[600px] overflow-y-auto pr-2"
                     >
                       <button
                         onClick={() => setSelectedCategory(null)}
@@ -297,22 +302,26 @@ export default function DashboardPage() {
                         Tüm Kategoriler
                       </button>
                       {categories
-                        .sort((a, b) => a.order - b.order)
+                        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                         .map((category, index) => (
                           <Draggable
-                            key={category.id}
+                            key={category.id.toString()}
                             draggableId={category.id.toString()}
                             index={index}
                           >
-                            {(provided) => (
+                            {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className="flex items-center justify-between group bg-white rounded-lg"
+                                className={`flex items-center justify-between group bg-white rounded-lg ${
+                                  snapshot.isDragging ? 'shadow-lg ring-2 ring-[#141414]' : ''
+                                }`}
                               >
                                 <div className="flex items-center flex-1">
-                                  <div className="p-2 text-gray-400">
+                                  <div 
+                                    {...provided.dragHandleProps}
+                                    className="p-2 text-gray-400 cursor-grab hover:text-gray-600"
+                                  >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16" />
                                     </svg>
@@ -371,7 +380,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Main Content */}
+          {/* Main Content - Adjusted width */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow">
               <div className="p-6 border-b">

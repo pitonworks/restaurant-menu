@@ -8,6 +8,7 @@ import Link from 'next/link'
 interface Category {
   id: number
   name: string
+  image_url?: string
 }
 
 interface MenuItem {
@@ -33,7 +34,7 @@ export default function HomePage() {
       const { data: categoriesData } = await supabase
         .from('categories')
         .select('*')
-        .order('name')
+        .order('order', { ascending: true })
       
       const { data: menuItemsData } = await supabase
         .from('menu_items')
@@ -130,10 +131,12 @@ export default function HomePage() {
             >
               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-50 group-hover:opacity-60 transition-opacity" />
               <Image
-                src={getCategoryImage(category.name)}
+                src={getCategoryImage(category)}
                 alt={category.name}
                 fill
                 className="object-cover"
+                sizes="(max-width: 768px) 50vw, 33vw"
+                priority={true}
               />
               <div className="absolute bottom-4 left-4 text-white text-lg font-medium">
                 {category.name}
@@ -175,18 +178,22 @@ export default function HomePage() {
 }
 
 // Kategori görselleri için yardımcı fonksiyon
-function getCategoryImage(categoryName: string): string {
-  const images = {
-    'Beverages': '/images/beverages.jpg',
-    'Soups': '/images/soups.jpg',
-    'Appetizers': '/images/appetizers.jpg',
-    'Salads': '/images/salads.jpg',
-    'Main Courses': '/images/main-courses.jpg',
-    'Desserts': '/images/desserts.jpg',
-    // Varsayılan görsel
-    'default': '/images/default-category.jpg'
+function getCategoryImage(category: Category): string {
+  // Eğer kategorinin kendi görseli varsa onu kullan
+  if (category.image_url) {
+    return category.image_url
   }
-  
-  // Kategori adına göre görsel döndür veya varsayılan görseli kullan
-  return images[categoryName as keyof typeof images] || images.default
+
+  // Varsayılan görseller
+  const defaultImages: { [key: string]: string } = {
+    'İçecekler': '/images/beverages.jpg',
+    'Çorbalar': '/images/soups.jpg',
+    'Başlangıçlar': '/images/appetizers.jpg',
+    'Salatalar': '/images/salads.jpg',
+    'Ana Yemekler': '/images/main-courses.jpg',
+    'Tatlılar': '/images/desserts.jpg',
+  }
+
+  // Kategori adına göre varsayılan görsel döndür veya genel varsayılan görseli kullan
+  return defaultImages[category.name] || '/images/default-category.jpg'
 } 
