@@ -122,12 +122,10 @@ export default function HomePage() {
       <main className="max-w-2xl mx-auto px-4 py-6">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-2">
           {categories.map((category) => (
-            <button
+            <Link
               key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`relative aspect-square rounded-lg overflow-hidden group ${
-                selectedCategory === category.id ? 'ring-2 ring-[#141414]' : ''
-              }`}
+              href={`/category/${category.id}`}
+              className={`relative aspect-square rounded-lg overflow-hidden group hover:ring-2 hover:ring-[#141414]`}
             >
               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-50 group-hover:opacity-60 transition-opacity" />
               <Image
@@ -141,7 +139,7 @@ export default function HomePage() {
               <div className="absolute bottom-4 left-4 text-white text-lg font-medium">
                 {category.name}
               </div>
-            </button>
+            </Link>
           ))}
         </div>
 
