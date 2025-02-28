@@ -72,11 +72,19 @@ export default function HomePage() {
       <header className="sticky top-0 bg-white border-b z-50">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex flex-col items-center space-y-4">
-            <div className="flex justify-between items-center w-full">
-              <h1 className="text-2xl font-bold text-[#141414]">Eagle's Nest</h1>
-              
+            <div className="flex justify-center items-center w-full">
+              <div className="flex items-center">
+                <Image
+                  src="/images/eagle-nest-logo.png"
+                  alt="Eagle's Nest"
+                  width={150}
+                  height={80}
+                  className="h-auto"
+                  priority
+                />
+              </div>
             </div>
-            <h2 className="text-lg text-gray-600">Menu</h2>
+            
             <div className="flex items-center space-x-4 text-gray-600">
               <a href="#" className="hover:text-gray-900">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,22 +154,28 @@ export default function HomePage() {
             {filteredMenuItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                {item.image_url && (
-                  <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
-                    <Image
-                      src={item.image_url}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                    />
+                <div className="flex items-center space-x-4">
+                  {item.image_url && (
+                    <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                      <Image
+                        src={item.image_url}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
+                    <p className="text-gray-600 text-sm mt-1">{item.description}</p>
                   </div>
-                )}
-                <div className="flex-1">
-                  <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
-                  <p className="text-gray-600 text-sm mt-1">{item.description}</p>
-                  <p className="text-[#141414] font-medium mt-2">₺{item.price}</p>
+                </div>
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+                    <p className="text-xl font-bold text-white">₺{item.price}</p>
+                  </div>
                 </div>
               </div>
             ))}
