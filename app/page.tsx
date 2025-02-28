@@ -70,17 +70,13 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 bg-white border-b z-50">
-        <div className="max-w-2xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex flex-col items-center space-y-4">
             <div className="flex justify-between items-center w-full">
-              <h1 className="text-2xl font-bold text-[#141414]">Ömer'in Yeri</h1>
-              <div className="flex items-center space-x-4">
-                <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900">
-                  Admin
-                </Link>
-              </div>
+              <h1 className="text-2xl font-bold text-[#141414]">Eagle's Nest</h1>
+              
             </div>
-            <h2 className="text-lg text-gray-600">Media King</h2>
+            <h2 className="text-lg text-gray-600">Menu</h2>
             <div className="flex items-center space-x-4 text-gray-600">
               <a href="#" className="hover:text-gray-900">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,25 +115,26 @@ export default function HomePage() {
       </header>
 
       {/* Categories Grid */}
-      <main className="max-w-2xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-2">
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => (
             <Link
               key={category.id}
               href={`/category/${category.id}`}
-              className={`relative aspect-square rounded-lg overflow-hidden group hover:ring-2 hover:ring-[#141414]`}
+              className="flex flex-col bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-50 group-hover:opacity-60 transition-opacity" />
-              <Image
-                src={getCategoryImage(category)}
-                alt={category.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 50vw, 33vw"
-                priority={true}
-              />
-              <div className="absolute bottom-4 left-4 text-white text-lg font-medium">
-                {category.name}
+              <div className="relative aspect-square">
+                <Image
+                  src={getCategoryImage(category)}
+                  alt={category.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  priority={true}
+                />
+              </div>
+              <div className="p-4 text-center bg-white">
+                <h3 className="text-lg font-medium text-[#141414]">{category.name}</h3>
               </div>
             </Link>
           ))}
