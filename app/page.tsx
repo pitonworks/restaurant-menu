@@ -260,12 +260,8 @@ function getCategoryImage(category: Category): string {
 
   // Varsayılan görseller
   const defaultImages: { [key: string]: string } = {
-    'İçecekler': '/images/beverages.jpg',
-    'Çorbalar': '/images/soups.jpg',
-    'Başlangıçlar': '/images/appetizers.jpg',
-    'Salatalar': '/images/salads.jpg',
-    'Ana Yemekler': '/images/main-courses.jpg',
-    'Tatlılar': '/images/desserts.jpg',
+    'Logo': '/images/eagle-nest-logo.png',
+    
   }
 
   // Kategori adına göre varsayılan görsel döndür veya genel varsayılan görseli kullan
