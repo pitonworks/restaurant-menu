@@ -1,33 +1,22 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useDropzone } from 'react-dropzone'
-
-interface Category {
-  id: number
-  name: string
-  image_url: string
-  order: number
-}
+import Image from 'next/image'
 
 interface Subcategory {
-  id: number
   name: string
-  category_id: number
-  order: number
   image_url?: string
   description?: string
 }
 
-export default function EditCategoryPage({ params }: { params: { id: string } }) {
+export default function AddCategoryPage() {
   const [name, setName] = useState('')
-  const [order, setOrder] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
@@ -48,52 +37,6 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
     },
     maxFiles: 1
   })
-
-  useEffect(() => {
-    fetchCategory()
-    fetchSubcategories()
-  }, [])
-
-  const fetchCategory = async () => {
-    try {
-      const { data: category, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('id', params.id)
-        .single()
-
-      if (error) throw error
-
-      if (category) {
-        setName(category.name)
-        setOrder(category.order || 0)
-        setImageUrl(category.image_url || '')
-      }
-
-      setLoading(false)
-    } catch (error) {
-      console.error('Error fetching category:', error)
-      setError('Kategori bilgileri yüklenirken bir hata oluştu')
-      setLoading(false)
-    }
-  }
-
-  const fetchSubcategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('subcategories')
-        .select('*')
-        .eq('category_id', params.id)
-        .order('order')
-
-      if (error) throw error
-      if (data) {
-        setSubcategories(data)
-      }
-    } catch (error) {
-      console.error('Error fetching subcategories:', error)
-    }
-  }
 
   const uploadImage = async (file: File) => {
     try {
@@ -189,42 +132,20 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
   const addSubcategory = () => {
     setSubcategories([...subcategories, { 
-      id: Date.now(),
       name: '',
-      category_id: parseInt(params.id),
-      order: subcategories.length,
       image_url: '',
       description: ''
     }])
   }
 
-  const removeSubcategory = async (subcategory: Subcategory) => {
-    try {
-      // Eğer yeni eklenmiş bir alt kategori ise (henüz kaydedilmemiş)
-      if (!subcategory.id) {
-        setSubcategories(subcategories.filter(s => s.id !== subcategory.id))
-        return
-      }
-
-      // Veritabanından sil
-      const { error } = await supabase
-        .from('subcategories')
-        .delete()
-        .eq('id', subcategory.id)
-
-      if (error) throw error
-
-      setSubcategories(subcategories.filter(s => s.id !== subcategory.id))
-    } catch (error) {
-      console.error('Error removing subcategory:', error)
-      setError('Alt kategori silinirken bir hata oluştu')
-    }
+  const removeSubcategory = (index: number) => {
+    setSubcategories(subcategories.filter((_, i) => i !== index))
   }
 
-  const updateSubcategory = (subcategory: Subcategory, updates: Partial<Subcategory>) => {
-    setSubcategories(subcategories.map(s => 
-      s.id === subcategory.id ? { ...s, ...updates } : s
-    ))
+  const updateSubcategory = (index: number, updates: Partial<Subcategory>) => {
+    const newSubcategories = [...subcategories]
+    newSubcategories[index] = { ...newSubcategories[index], ...updates }
+    setSubcategories(newSubcategories)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -247,69 +168,53 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
         }
       }
 
-      // Kategoriyi güncelle
-      const { error: categoryError } = await supabase
+      // Önce kategoriyi ekle
+      const { data: categoryData, error: categoryError } = await supabase
         .from('categories')
-        .update({
-          name,
-          order,
-          image_url: finalImageUrl,
-        })
-        .eq('id', params.id)
+        .insert([
+          {
+            name,
+            image_url: finalImageUrl,
+          },
+        ])
+        .select()
+        .single()
 
       if (categoryError) throw categoryError
 
-      // Alt kategorileri güncelle
-      for (const subcategory of subcategories) {
-        if (!subcategory.name.trim()) continue
+      // Alt kategorileri ekle
+      if (subcategories.length > 0 && categoryData) {
+        const subcategoryInserts = subcategories
+          .filter(sub => sub.name.trim() !== '')
+          .map((sub, index) => ({
+            name: sub.name,
+            category_id: categoryData.id,
+            order: index
+          }))
 
-        if (subcategory.id && subcategory.id > 0) {
-          // Mevcut alt kategoriyi güncelle
-          const { error } = await supabase
+        if (subcategoryInserts.length > 0) {
+          const { error: subcategoryError } = await supabase
             .from('subcategories')
-            .update({
-              name: subcategory.name,
-              order: subcategory.order
-            })
-            .eq('id', subcategory.id)
+            .insert(subcategoryInserts)
 
-          if (error) throw error
-        } else {
-          // Yeni alt kategori ekle
-          const { error } = await supabase
-            .from('subcategories')
-            .insert({
-              name: subcategory.name,
-              category_id: parseInt(params.id),
-              order: subcategory.order
-            })
-
-          if (error) throw error
+          if (subcategoryError) throw subcategoryError
         }
       }
 
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Error in handleSubmit:', error)
-      setError(error.message || 'Kategori güncellenirken bir hata oluştu')
+      setError(error.message || 'Kategori eklenirken bir hata oluştu')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-2xl">Yükleniyor...</div>
-      </div>
-    )
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#141414]">Kategori Düzenle</h1>
+          <h1 className="text-2xl font-bold text-[#141414]">Yeni Kategori Ekle</h1>
           <Link
             href="/dashboard"
             className="text-[#141414] hover:text-gray-900"
@@ -332,20 +237,6 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
                 required
                 placeholder="Kategori adını girin"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="order" className="block text-sm font-medium text-[#141414]">
-                Sıralama (Küçük sayı = Üstte gösterilir)
-              </label>
-              <input
-                type="number"
-                id="order"
-                value={order}
-                onChange={(e) => setOrder(parseInt(e.target.value))}
-                min="0"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
               />
             </div>
 
@@ -424,20 +315,20 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
                 </button>
               </div>
               <div className="space-y-6">
-                {subcategories.map((subcategory) => (
-                  <div key={subcategory.id} className="bg-gray-50 rounded-lg p-4">
+                {subcategories.map((subcategory, index) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-4">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <input
                           type="text"
                           value={subcategory.name}
-                          onChange={(e) => updateSubcategory(subcategory, { name: e.target.value })}
+                          onChange={(e) => updateSubcategory(index, { name: e.target.value })}
                           placeholder="Alt kategori adı"
                           className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
                         />
                         <button
                           type="button"
-                          onClick={() => removeSubcategory(subcategory)}
+                          onClick={() => removeSubcategory(index)}
                           className="ml-2 text-red-600 hover:text-red-800"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -452,7 +343,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
                         </label>
                         <textarea
                           value={subcategory.description || ''}
-                          onChange={(e) => updateSubcategory(subcategory, { description: e.target.value })}
+                          onChange={(e) => updateSubcategory(index, { description: e.target.value })}
                           rows={2}
                           placeholder="Alt kategori açıklaması"
                           className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
@@ -474,7 +365,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
                               />
                               <button
                                 type="button"
-                                onClick={() => updateSubcategory(subcategory, { image_url: '' })}
+                                onClick={() => updateSubcategory(index, { image_url: '' })}
                                 className="absolute -top-1 -right-1 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 shadow-lg"
                               >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -492,7 +383,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
                                 if (file) {
                                   try {
                                     const url = await uploadSubcategoryImage(file)
-                                    updateSubcategory(subcategory, { image_url: url })
+                                    updateSubcategory(index, { image_url: url })
                                   } catch (error: any) {
                                     setError(error.message)
                                   }
@@ -522,7 +413,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
               disabled={loading}
               className="w-full bg-[#141414] text-white py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#141414] disabled:opacity-50"
             >
-              {loading ? 'Güncelleniyor...' : 'Kategoriyi Güncelle'}
+              {loading ? 'Ekleniyor...' : 'Kategori Ekle'}
             </button>
           </div>
         </form>

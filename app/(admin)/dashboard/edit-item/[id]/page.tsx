@@ -12,14 +12,21 @@ interface Category {
   name: string
 }
 
+interface Subcategory {
+  id: number
+  name: string
+  category_id: number
+}
+
 interface MenuItem {
   id: number
   name: string
   description: string
   price: number
   category_id: number
+  subcategory_id: number | null
   image_url: string
-  allergens?: string
+  allergens: string
 }
 
 export default function EditItemPage({ params }: { params: { id: string } }) {
@@ -27,9 +34,11 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [subcategoryId, setSubcategoryId] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
   const [allergens, setAllergens] = useState('')
@@ -56,6 +65,15 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
     fetchMenuItem()
   }, [])
 
+  useEffect(() => {
+    if (categoryId) {
+      fetchSubcategories(parseInt(categoryId))
+    } else {
+      setSubcategories([])
+      setSubcategoryId('')
+    }
+  }, [categoryId])
+
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
@@ -67,6 +85,21 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
       if (data) setCategories(data)
     } catch (error) {
       console.error('Error fetching categories:', error)
+    }
+  }
+
+  const fetchSubcategories = async (categoryId: number) => {
+    try {
+      const { data, error } = await supabase
+        .from('subcategories')
+        .select('id, name, category_id')
+        .eq('category_id', categoryId)
+        .order('name')
+
+      if (error) throw error
+      if (data) setSubcategories(data)
+    } catch (error) {
+      console.error('Error fetching subcategories:', error)
     }
   }
 
@@ -84,13 +117,13 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
         setDescription(data.description || '')
         setPrice(data.price.toString())
         setCategoryId(data.category_id.toString())
+        setSubcategoryId(data.subcategory_id ? data.subcategory_id.toString() : '')
         setImageUrl(data.image_url || '')
         setAllergens(data.allergens || '')
       }
-      setLoading(false)
     } catch (error) {
       console.error('Error fetching menu item:', error)
-      setLoading(false)
+      setError('Ürün bilgileri yüklenirken bir hata oluştu')
     }
   }
 
@@ -136,6 +169,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
           description,
           price: parseFloat(price),
           category_id: parseInt(categoryId),
+          subcategory_id: subcategoryId ? parseInt(subcategoryId) : null,
           image_url: finalImageUrl,
           allergens,
         })
@@ -245,6 +279,27 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
                 ))}
               </select>
             </div>
+
+            {subcategories.length > 0 && (
+              <div>
+                <label htmlFor="subcategory" className="block text-sm font-medium text-[#141414]">
+                  Alt Kategori
+                </label>
+                <select
+                  id="subcategory"
+                  value={subcategoryId}
+                  onChange={(e) => setSubcategoryId(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
+                >
+                  <option value="">Alt Kategori Seçin (Opsiyonel)</option>
+                  {subcategories.map((subcategory) => (
+                    <option key={subcategory.id} value={subcategory.id}>
+                      {subcategory.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-[#141414] mb-2">

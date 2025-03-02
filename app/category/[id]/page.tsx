@@ -11,18 +11,27 @@ interface Category {
   image_url?: string
 }
 
+interface Subcategory {
+  id: number
+  name: string
+  category_id: number
+}
+
 interface MenuItem {
   id: number
   name: string
   description: string
   price: number
   category_id: number
+  subcategory_id: number | null
   image_url: string
 }
 
 export default function CategoryPage({ params }: { params: { id: string } }) {
   const [category, setCategory] = useState<Category | null>(null)
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   const supabase = createClientComponentClient()
@@ -40,7 +49,14 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
         .eq('id', params.id)
         .single()
 
-      // Fetch menu items for this category
+      // Fetch subcategories
+      const { data: subcategoriesData } = await supabase
+        .from('subcategories')
+        .select('*')
+        .eq('category_id', params.id)
+        .order('order')
+
+      // Fetch menu items
       const { data: menuItemsData } = await supabase
         .from('menu_items')
         .select('*')
@@ -48,6 +64,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
         .order('name')
 
       if (categoryData) setCategory(categoryData)
+      if (subcategoriesData) setSubcategories(subcategoriesData)
       if (menuItemsData) setMenuItems(menuItemsData)
       setLoading(false)
     } catch (error) {
@@ -55,6 +72,10 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
       setLoading(false)
     }
   }
+
+  const filteredMenuItems = selectedSubcategory
+    ? menuItems.filter(item => item.subcategory_id === selectedSubcategory)
+    : menuItems
 
   if (loading) {
     return (
@@ -77,21 +98,50 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                 </svg>
               </Link>
               <h1 className="text-2xl font-bold text-[#141414]">{category?.name}</h1>
-              <div className="w-6"></div> {/* Spacer for alignment */}
+              <div className="w-6"></div>
             </div>
+
+            {/* Subcategories */}
+            {subcategories.length > 0 && (
+              <div className="flex overflow-x-auto no-scrollbar space-x-2 w-full py-2">
+                <button
+                  onClick={() => setSelectedSubcategory(null)}
+                  className={`flex-none px-4 py-2 rounded-full text-sm transition-colors duration-200 whitespace-nowrap ${
+                    selectedSubcategory === null
+                      ? 'bg-black text-white'
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  Tümü
+                </button>
+                {subcategories.map((subcategory) => (
+                  <button
+                    key={subcategory.id}
+                    onClick={() => setSelectedSubcategory(subcategory.id)}
+                    className={`flex-none px-4 py-2 rounded-full text-sm transition-colors duration-200 whitespace-nowrap ${
+                      selectedSubcategory === subcategory.id
+                        ? 'bg-black text-white'
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    }`}
+                  >
+                    {subcategory.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </header>
 
       {/* Menu Items */}
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-2xl mx-auto px-8 py-6">
         <div className="space-y-6">
-          {menuItems.length === 0 ? (
+          {filteredMenuItems.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               Bu kategoride henüz ürün bulunmuyor
             </div>
           ) : (
-            menuItems.map((item) => (
+            filteredMenuItems.map((item) => (
               <Link
                 key={item.id}
                 href={`/menu-item/${item.id}`}
@@ -114,9 +164,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                   </div>
                 </div>
                 <div className="flex-shrink-0">
-                  <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
-                    <p className="text-xl font-bold text-white">₺{item.price}</p>
-                  </div>
+                  <p className="text-xl font-bold text-[#141414]">₺{item.price}</p>
                 </div>
               </Link>
             ))

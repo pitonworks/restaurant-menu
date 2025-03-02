@@ -15,25 +15,60 @@ interface Category {
 interface Subcategory {
   id: number
   name: string
+  description: string
   category_id: number
+  image_url?: string
 }
 
-export default function AddItemPage() {
+export default function EditSubcategoryPage({ params }: { params: { id: string } }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [price, setPrice] = useState('')
-  const [categoryId, setCategoryId] = useState('')
-  const [subcategoryId, setSubcategoryId] = useState('')
   const [imageUrl, setImageUrl] = useState('')
-  const [categories, setCategories] = useState<Category[]>([])
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
-  const [loading, setLoading] = useState(false)
+  const [category, setCategory] = useState<Category | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
-  const [allergens, setAllergens] = useState('')
 
   const router = useRouter()
   const supabase = createClientComponentClient()
+
+  useEffect(() => {
+    fetchSubcategory()
+  }, [])
+
+  const fetchSubcategory = async () => {
+    try {
+      const { data: subcategory, error: subcategoryError } = await supabase
+        .from('subcategories')
+        .select('*')
+        .eq('id', params.id)
+        .single()
+
+      if (subcategoryError) throw subcategoryError
+
+      if (subcategory) {
+        setName(subcategory.name)
+        setDescription(subcategory.description || '')
+        setImageUrl(subcategory.image_url || '')
+
+        // Fetch category details
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('categories')
+          .select('id, name')
+          .eq('id', subcategory.category_id)
+          .single()
+
+        if (categoryError) throw categoryError
+        if (categoryData) setCategory(categoryData)
+      }
+
+      setLoading(false)
+    } catch (error) {
+      console.error('Error fetching subcategory:', error)
+      setError('Alt kategori bilgileri yüklenirken bir hata oluştu')
+      setLoading(false)
+    }
+  }
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -48,48 +83,6 @@ export default function AddItemPage() {
     },
     maxFiles: 1
   })
-
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  useEffect(() => {
-    if (categoryId) {
-      fetchSubcategories(parseInt(categoryId))
-    } else {
-      setSubcategories([])
-      setSubcategoryId('')
-    }
-  }, [categoryId])
-
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id, name')
-        .order('name')
-
-      if (error) throw error
-      if (data) setCategories(data)
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }
-
-  const fetchSubcategories = async (categoryId: number) => {
-    try {
-      const { data, error } = await supabase
-        .from('subcategories')
-        .select('id, name, category_id')
-        .eq('category_id', categoryId)
-        .order('name')
-
-      if (error) throw error
-      if (data) setSubcategories(data)
-    } catch (error) {
-      console.error('Error fetching subcategories:', error)
-    }
-  }
 
   const uploadImage = async (file: File) => {
     try {
@@ -127,35 +120,58 @@ export default function AddItemPage() {
       }
 
       const { error } = await supabase
-        .from('menu_items')
-        .insert([
-          {
-            name,
-            description,
-            price: parseFloat(price),
-            category_id: parseInt(categoryId),
-            subcategory_id: subcategoryId ? parseInt(subcategoryId) : null,
-            image_url: finalImageUrl,
-            allergens,
-          },
-        ])
+        .from('subcategories')
+        .update({
+          name,
+          description,
+          image_url: finalImageUrl,
+        })
+        .eq('id', params.id)
 
       if (error) throw error
 
       router.push('/dashboard')
     } catch (error) {
-      console.error('Error adding menu item:', error)
-      setError('Ürün eklenirken bir hata oluştu')
+      console.error('Error updating subcategory:', error)
+      setError('Alt kategori güncellenirken bir hata oluştu')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('Bu alt kategoriyi silmek istediğinizden emin misiniz?')) return
+
+    try {
+      const { error } = await supabase
+        .from('subcategories')
+        .delete()
+        .eq('id', params.id)
+
+      if (error) throw error
+
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Error deleting subcategory:', error)
+      setError('Alt kategori silinirken bir hata oluştu')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-2xl">Yükleniyor...</div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#141414]">Yeni Ürün Ekle</h1>
+          <h1 className="text-2xl font-bold text-[#141414]">
+            {category ? `${category.name} - Alt Kategori Düzenle` : 'Alt Kategori Düzenle'}
+          </h1>
           <Link
             href="/dashboard"
             className="text-[#141414] hover:text-gray-900"
@@ -168,7 +184,7 @@ export default function AddItemPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-[#141414]">
-                Ürün Adı
+                Alt Kategori Adı
               </label>
               <input
                 type="text"
@@ -176,7 +192,7 @@ export default function AddItemPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                placeholder="Ürün adını girin"
+                placeholder="Alt kategori adını girin"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
               />
             </div>
@@ -190,73 +206,10 @@ export default function AddItemPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                placeholder="Ürün açıklamasını girin"
+                placeholder="Alt kategori açıklamasını girin"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
               />
             </div>
-
-            <div>
-              <label htmlFor="price" className="block text-sm font-medium text-[#141414]">
-                Fiyat
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">₺</span>
-                </div>
-                <input
-                  type="number"
-                  id="price"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  required
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  className="block w-full pl-7 rounded-md border-gray-300 focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-[#141414]">
-                Kategori
-              </label>
-              <select
-                id="category"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
-              >
-                <option value="">Kategori Seçin</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {subcategories.length > 0 && (
-              <div>
-                <label htmlFor="subcategory" className="block text-sm font-medium text-[#141414]">
-                  Alt Kategori
-                </label>
-                <select
-                  id="subcategory"
-                  value={subcategoryId}
-                  onChange={(e) => setSubcategoryId(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
-                >
-                  <option value="">Alt Kategori Seçin (Opsiyonel)</option>
-                  {subcategories.map((subcategory) => (
-                    <option key={subcategory.id} value={subcategory.id}>
-                      {subcategory.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <div>
               <label className="block text-sm font-medium text-[#141414] mb-2">
@@ -326,20 +279,6 @@ export default function AddItemPage() {
                 )}
               </div>
             </div>
-
-            <div>
-              <label htmlFor="allergens" className="block text-sm font-medium text-[#141414]">
-                Alerjenler
-              </label>
-              <textarea
-                id="allergens"
-                value={allergens}
-                onChange={(e) => setAllergens(e.target.value)}
-                rows={3}
-                placeholder="Alerjen bilgilerini girin (örn: gluten, süt, fındık)"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-              />
-            </div>
           </div>
 
           {error && (
@@ -348,13 +287,21 @@ export default function AddItemPage() {
             </div>
           )}
 
-          <div className="mt-6">
+          <div className="mt-6 space-y-3">
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-[#141414] text-white py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#141414] disabled:opacity-50"
             >
-              {loading ? 'Ekleniyor...' : 'Ürün Ekle'}
+              {loading ? 'Güncelleniyor...' : 'Alt Kategoriyi Güncelle'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Alt Kategoriyi Sil
             </button>
           </div>
         </form>

@@ -128,9 +128,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                     <h1 className="text-2xl font-bold text-[#141414]">{menuItem.name}</h1>
                     <p className="text-gray-600 mt-1">{menuItem.category?.name}</p>
                   </div>
-                  <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
-                    <p className="text-xl font-bold text-white">₺{menuItem.price}</p>
-                  </div>
+                  <p className="text-2xl font-bold text-[#141414]">₺{menuItem.price}</p>
                 </div>
 
                 {/* Description */}
@@ -176,7 +174,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                     <div className="p-4">
                       <h3 className="text-[#141414] font-medium">{item.name}</h3>
                       <p className="text-gray-600 text-sm">{item.category?.name}</p>
-                      <p className="text-red-600 font-bold mt-2">₺{item.price}</p>
+                      <p className="text-[#2166AD] font-bold mt-2">₺{item.price}</p>
                     </div>
                   </Link>
                 ))}

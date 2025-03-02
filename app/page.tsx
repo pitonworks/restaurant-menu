@@ -58,6 +58,14 @@ export default function HomePage() {
     ? menuItems.filter(item => item.category_id === selectedCategory)
     : menuItems
 
+  // Filter items based on search query
+  const searchedItems = searchQuery
+    ? filteredMenuItems.filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : filteredMenuItems
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
@@ -123,9 +131,9 @@ export default function HomePage() {
       </header>
 
       {/* Categories Grid */}
-      <main className="max-w-4xl mx-auto px-4 py-6">
+      <main className="max-w-4xl mx-auto px-8 py-6">
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => (
+          {!searchQuery && categories.map((category) => (
             <Link
               key={category.id}
               href={`/category/${category.id}`}
@@ -148,10 +156,56 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Menu Items */}
-        {selectedCategory && (
+        {/* Search Results */}
+        {searchQuery && (
           <div className="mt-8 space-y-6">
-            {filteredMenuItems.map((item) => (
+            {searchedItems.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                Aradığınız kriterlere uygun ürün bulunamadı
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {searchedItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/menu-item/${item.id}`}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center space-x-4">
+                      {item.image_url && (
+                        <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                          <Image
+                            src={item.image_url}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
+                        <p className="text-gray-600 text-sm mt-1">{item.description}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {categories.find(cat => cat.id === item.category_id)?.name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 rounded-full bg-[#2468A6] flex items-center justify-center shadow-lg">
+                        <p className="text-xl font-bold text-white">₺{item.price}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Category Menu Items */}
+        {selectedCategory && !searchQuery && (
+          <div className="mt-8 space-y-6">
+            {searchedItems.map((item) => (
               <div
                 key={item.id}
                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -173,7 +227,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="flex-shrink-0">
-                  <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+                  <div className="w-16 h-16 rounded-full bg-[#2468A6] flex items-center justify-center shadow-lg">
                     <p className="text-xl font-bold text-white">₺{item.price}</p>
                   </div>
                 </div>
