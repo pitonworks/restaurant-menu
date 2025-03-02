@@ -5,6 +5,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 
 // StrictMode için gerekli düzenleme
 const isBrowser = typeof window !== 'undefined'
@@ -79,6 +80,7 @@ function CategoryList({ categories, handleDeleteCategory }) {
 export default function DashboardPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [newCategory, setNewCategory] = useState('')
   const [error, setError] = useState('')
@@ -99,11 +101,11 @@ export default function DashboardPage() {
         .from('categories')
         .select('*')
         .order('order', { ascending: true })
-
+      
       const { data: menuItemsData } = await supabase
         .from('menu_items')
         .select('*')
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
 
       if (categoriesData) setCategories(categoriesData)
       if (menuItemsData) setMenuItems(menuItemsData)
@@ -185,6 +187,42 @@ export default function DashboardPage() {
     }
   }
 
+  // Kategori filtreleme fonksiyonu
+  const filteredMenuItems = selectedCategory
+    ? menuItems.filter(item => item.category_id === selectedCategory)
+    : menuItems
+
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(categories);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Yeni sıralamayı state'e uygula
+    setCategories(items);
+
+    // Her kategorinin order değerini güncelle
+    const updates = items.map((category, index) => ({
+      id: category.id,
+      order: index
+    }));
+
+    // Supabase'de sıralamayı güncelle
+    try {
+      for (const update of updates) {
+        await supabase
+          .from('categories')
+          .update({ order: update.order })
+          .eq('id', update.id);
+      }
+    } catch (error) {
+      console.error('Error updating category orders:', error);
+      // Hata durumunda orijinal sıralamaya geri dön
+      fetchData();
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -241,101 +279,179 @@ export default function DashboardPage() {
           <h2 className="text-2xl font-bold text-[#141414]">Menü</h2>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-[#141414]">Kategoriler</h3>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    placeholder="Yeni kategori adı"
-                    className="flex-1 px-3 py-2 border rounded text-[#141414] placeholder-gray-500"
-                  />
-                  <button
-                    onClick={handleAddCategory}
-                    className="bg-[#141414] text-white px-4 py-2 rounded hover:bg-gray-800"
-                  >
-                    Ekle
-                  </button>
-                </div>
-              </div>
-
-              {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
-
-              <CategoryList
-                categories={categories}
-                handleDeleteCategory={handleDeleteCategory}
-              />
-            </div>
-          </div>
-
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-[#141414]">Menü Öğeleri</h3>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+            {/* Kategoriler Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6 border-b flex justify-between items-center">
+                  <h3 className="font-semibold text-[#141414]">Kategoriler</h3>
                   <Link
-                    href="/dashboard/add-item"
-                    className="bg-[#141414] text-white px-4 py-2 rounded hover:bg-gray-800"
+                    href="/dashboard/add-category"
+                    className="text-[#141414] hover:text-gray-700"
+                    title="Yeni Kategori Ekle"
                   >
-                    + Yeni Öğe Ekle
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    </svg>
                   </Link>
                 </div>
+                <div className="p-4">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className={`w-full text-left px-4 py-2 rounded-md mb-2 ${
+                      selectedCategory === null
+                        ? 'bg-gray-100 text-[#141414]'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    Tümü
+                  </button>
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="categories">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                        >
+                          {categories.map((category, index) => (
+                            <Draggable
+                              key={category.id}
+                              draggableId={category.id.toString()}
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`flex items-center justify-between mb-2 group ${
+                                    snapshot.isDragging ? 'bg-gray-50' : ''
+                                  }`}
+                                >
+                                  <button
+                                    onClick={() => setSelectedCategory(category.id)}
+                                    className={`flex-grow text-left px-4 py-2 rounded-md ${
+                                      selectedCategory === category.id
+                                        ? 'bg-gray-100 text-[#141414]'
+                                        : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <div className="flex items-center">
+                                      <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                                      </svg>
+                                      {category.name}
+                                    </div>
+                                  </button>
+                                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Link
+                                      href={`/dashboard/edit-category/${category.id}`}
+                                      className="p-1 text-blue-600 hover:text-blue-800 rounded"
+                                      title="Kategoriyi Düzenle"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                    </Link>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteCategory(category.id);
+                                      }}
+                                      className="p-1 text-red-600 hover:text-red-800 rounded"
+                                      title="Kategoriyi Sil"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                </div>
               </div>
+            </div>
 
-              <div className="divide-y">
-                {menuItems.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500">
-                    Henüz menü öğesi eklenmemiş
-                  </div>
-                ) : (
-                  menuItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-4 hover:bg-gray-50"
+            {/* Menü Öğeleri */}
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6 border-b">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-[#141414]">
+                      {selectedCategory 
+                        ? `${categories.find(c => c.id === selectedCategory)?.name} Menü Öğeleri`
+                        : 'Tüm Menü Öğeleri'}
+                    </h3>
+                    <Link
+                      href="/dashboard/add-item"
+                      className="bg-[#141414] text-white px-4 py-2 rounded hover:bg-gray-800"
                     >
-                      <div className="flex items-center space-x-4">
-                        {item.image_url && (
-                          <div className="relative w-16 h-16 rounded overflow-hidden">
-                            <Image
-                              src={item.image_url}
-                              alt={item.name}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        )}
-                        <div>
-                          <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
-                          <p className="text-gray-600 text-sm my-2 pr-12">{item.description}</p>
-                          <div className="mt-2 flex items-center gap-3">
-                            <p className="text-lg font-bold text-[#141414]">₺{item.price}</p>
-                            <span className="text-sm text-gray-500">
-                              {categories.find(cat => cat.id === item.category_id)?.name}
-                            </span>
+                      + Yeni Öğe Ekle
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="divide-y">
+                  {filteredMenuItems.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500">
+                      {selectedCategory 
+                        ? 'Bu kategoride henüz menü öğesi bulunmuyor'
+                        : 'Henüz menü öğesi eklenmemiş'}
+                    </div>
+                  ) : (
+                    filteredMenuItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-4 hover:bg-gray-50"
+                      >
+                        <div className="flex items-center space-x-4">
+                          {item.image_url && (
+                            <div className="relative w-16 h-16 rounded overflow-hidden">
+                              <Image
+                                src={item.image_url}
+                                alt={item.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
+                            <p className="text-gray-600 text-sm my-2 pr-12">{item.description}</p>
+                            <div className="mt-2 flex items-center gap-3">
+                              <p className="text-lg font-bold text-[#141414]">₺{item.price}</p>
+                              <span className="text-sm text-gray-500">
+                                {categories.find(cat => cat.id === item.category_id)?.name}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <Link
+                            href={`/dashboard/edit-item/${item.id}`}
+                            className="text-blue-600 hover:text-blue-800 px-3 py-1"
+                          >
+                            Düzenle
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteMenuItem(item.id)}
+                            className="text-red-600 hover:text-red-800 px-3 py-1"
+                          >
+                            Sil
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/dashboard/edit-item/${item.id}`}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          Düzenle
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteMenuItem(item.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          Sil
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

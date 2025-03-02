@@ -97,7 +97,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
               </Link>
-              <h1 className="text-2xl font-bold text-[#141414]">{category?.name}</h1>
+              <h1 className="text-2xl font-bold text-[#2666AE]">{category?.name}</h1>
               <div className="w-6"></div>
             </div>
 
@@ -164,7 +164,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                   </div>
                 </div>
                 <div className="flex-shrink-0">
-                  <p className="text-xl font-bold text-[#141414]">₺{item.price}</p>
+                  <p className="text-xl font-bold text-[#2666AE]">₺{item.price}</p>
                 </div>
               </Link>
             ))

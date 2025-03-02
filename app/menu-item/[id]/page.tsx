@@ -128,7 +128,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                     <h1 className="text-2xl font-bold text-[#141414]">{menuItem.name}</h1>
                     <p className="text-gray-600 mt-1">{menuItem.category?.name}</p>
                   </div>
-                  <p className="text-2xl font-bold text-[#141414]">₺{menuItem.price}</p>
+                  <p className="text-2xl font-bold text-[#2666AE]">₺{menuItem.price}</p>
                 </div>
 
                 {/* Description */}
@@ -143,7 +143,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                 {menuItem.allergens && (
                   <div>
                     <h2 className="text-lg font-semibold text-[#141414] mb-2">Alerjen Bilgisi</h2>
-                    <div className="bg-yellow-50 rounded-lg p-4">
+                    <div className="bg-blue-50 rounded-lg p-4">
                       <p className="text-gray-600">{menuItem.allergens}</p>
                     </div>
                   </div>
