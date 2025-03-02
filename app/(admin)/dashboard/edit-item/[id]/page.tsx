@@ -5,6 +5,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useDropzone } from 'react-dropzone'
+import Image from 'next/image'
 
 interface Category {
   id: number
@@ -18,6 +19,7 @@ interface MenuItem {
   price: number
   category_id: number
   image_url: string
+  allergens?: string
 }
 
 export default function EditItemPage({ params }: { params: { id: string } }) {
@@ -30,6 +32,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
+  const [allergens, setAllergens] = useState('')
 
   const router = useRouter()
   const supabase = createClientComponentClient()
@@ -82,6 +85,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
         setPrice(data.price.toString())
         setCategoryId(data.category_id.toString())
         setImageUrl(data.image_url || '')
+        setAllergens(data.allergens || '')
       }
       setLoading(false)
     } catch (error) {
@@ -133,6 +137,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
           price: parseFloat(price),
           category_id: parseInt(categoryId),
           image_url: finalImageUrl,
+          allergens,
         })
         .eq('id', params.id)
 
@@ -245,43 +250,83 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
               <label className="block text-sm font-medium text-[#141414] mb-2">
                 Görsel
               </label>
-              <div
-                {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragActive ? 'border-[#141414] bg-gray-50' : 'border-gray-300 hover:border-[#141414]'
-                }`}
-              >
-                <input {...getInputProps()} />
-                {uploadedImage ? (
-                  <div className="text-[#141414]">
-                    <p>Seçilen dosya: {uploadedImage.name}</p>
+              <div className="space-y-4">
+                {/* Current Image Preview */}
+                {imageUrl && !uploadedImage && (
+                  <div className="relative w-32 h-32 mx-auto">
+                    <Image
+                      src={imageUrl}
+                      alt={name}
+                      fill
+                      className="object-cover rounded-lg"
+                    />
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setUploadedImage(null)
-                      }}
-                      className="text-red-600 hover:text-red-800 mt-2"
+                      onClick={() => setImageUrl('')}
+                      className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg"
                     >
-                      Görseli Kaldır
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </button>
                   </div>
-                ) : (
-                  <div className="text-gray-600">
-                    <p>Görsel yüklemek için tıklayın veya sürükleyip bırakın</p>
-                    <p className="text-sm mt-1">PNG, JPG, GIF (max. 10MB)</p>
-                  </div>
+                )}
+
+                {/* Dropzone */}
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                    isDragActive ? 'border-[#141414] bg-gray-50' : 'border-gray-300 hover:border-[#141414]'
+                  }`}
+                >
+                  <input {...getInputProps()} />
+                  {uploadedImage ? (
+                    <div className="text-[#141414]">
+                      <p>Seçilen dosya: {uploadedImage.name}</p>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setUploadedImage(null)
+                        }}
+                        className="text-red-600 hover:text-red-800 mt-2"
+                      >
+                        Görseli Kaldır
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-gray-600">
+                      <p>Görsel yüklemek için tıklayın veya sürükleyip bırakın</p>
+                      <p className="text-sm mt-1">PNG, JPG, GIF (max. 10MB)</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Image URL Input */}
+                {!uploadedImage && (
+                  <input
+                    type="url"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="veya görsel URL'si girin"
+                    className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                  />
                 )}
               </div>
-              {imageUrl && (
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="veya görsel URL'si girin"
-                  className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-                />
-              )}
+            </div>
+
+            <div>
+              <label htmlFor="allergens" className="block text-sm font-medium text-[#141414]">
+                Alerjenler
+              </label>
+              <textarea
+                id="allergens"
+                value={allergens}
+                onChange={(e) => setAllergens(e.target.value)}
+                rows={3}
+                placeholder="Alerjen bilgilerini girin (örn: gluten, süt, fındık)"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+              />
             </div>
           </div>
 

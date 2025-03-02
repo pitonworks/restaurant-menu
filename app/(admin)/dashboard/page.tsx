@@ -206,45 +206,46 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="sticky top-0 bg-white border-b z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-semibold text-[#141414]">QR Menü</h1>
-              <div className="hidden md:flex space-x-4">
-                <Link href="/dashboard" className="text-[#141414] hover:text-gray-600">
-                  Genel Bakış
-                </Link>
-                <Link href="/dashboard" className="text-[#141414] hover:text-gray-600">
-                  Menü Yönetimi
-                </Link>
-                <Link href="/dashboard" className="text-[#141414] hover:text-gray-600">
-                  QR Kodlar
-                </Link>
-                <Link href="/dashboard" className="text-[#141414] hover:text-gray-600">
-                  Analitik
-                </Link>
-              </div>
+            <div className="flex items-center">
+              <Image
+                src="/images/eagle-nest-logo.png"
+                alt="Eagle's Nest"
+                width={150}
+                height={80}
+                className="h-auto"
+                priority
+              />
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/" className="text-gray-600 hover:text-gray-900">
-                Menüyü Görüntüle
+              <Link 
+                href="/"
+                className="text-gray-600 hover:text-gray-900 flex items-center gap-2"
+                title="Menüyü Görüntüle"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-gray-600 hover:text-gray-900 flex items-center gap-2"
+                title="Çıkış Yap"
               >
-                Çıkış
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
               </button>
             </div>
           </div>
         </div>
-      </nav>
+      </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-[#141414]">Menü</h2>
-          <p className="text-gray-600">Restoranınızın menüsünü buradan yönetin</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
