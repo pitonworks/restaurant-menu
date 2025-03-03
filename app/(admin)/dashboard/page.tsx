@@ -17,6 +17,7 @@ interface Category {
   order: number
   created_at: string
   subcategories?: Subcategory[]
+  slug?: string
 }
 
 interface Subcategory {
@@ -88,6 +89,21 @@ function DeleteModal({ isOpen, onClose, onConfirm, itemName, itemType }: DeleteM
       </div>
     </div>
   );
+}
+
+// Slug oluşturma fonksiyonu
+const createSlug = (text: string): string => {
+  const turkishChars: { [key: string]: string } = {
+    'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'ö': 'o', 'ç': 'c',
+    'Ğ': 'G', 'Ü': 'U', 'Ş': 'S', 'İ': 'I', 'Ö': 'O', 'Ç': 'C'
+  };
+  
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '') // sadece harf, rakam ve boşluk
+    .replace(/\s+/g, '-') // boşlukları tire ile değiştir
+    .replace(/[ğüşıöçĞÜŞİÖÇ]/g, char => turkishChars[char] || char) // türkçe karakterleri değiştir
+    .replace(/^-+|-+$/g, ''); // baştaki ve sondaki tireleri kaldır
 }
 
 // Basit kategori listesi bileşeni
@@ -196,7 +212,7 @@ function CategoryList({
                       </div>
                       <div className="flex items-center space-x-3">
                         <Link
-                          href={`/dashboard/edit-category/${category.id}`}
+                          href={`/dashboard/edit-category/${createSlug(category.name)}-${category.id}`}
                           className="p-1 text-blue-600 hover:text-blue-800 rounded"
                           title="Düzenle"
                           onClick={(e) => e.stopPropagation()}
@@ -251,7 +267,7 @@ function CategoryList({
                               </div>
                               <div className="flex items-center space-x-2">
                                 <Link
-                                  href={`/dashboard/edit-subcategory/${subcategory.id}`}
+                                  href={`/dashboard/edit-subcategory/${createSlug(subcategory.name)}-${subcategory.id}`}
                                   className="text-blue-600 hover:text-blue-800 p-1 rounded"
                                   onClick={(e) => e.stopPropagation()}
                                 >
@@ -320,28 +336,50 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
+      
+      // Kategorileri çek
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('*, subcategories(*)')
-        .order('order')
+        .order('order');
 
-      if (categoriesError) throw categoriesError
+      if (categoriesError) {
+        console.error('Categories error:', categoriesError);
+        throw new Error(`Kategori bilgileri yüklenirken bir hata oluştu: ${categoriesError.message}\nHata detayı: ${JSON.stringify(categoriesError)}`);
+      }
 
+      // Menü öğelerini çek
       const { data: menuItemsData, error: menuItemsError } = await supabase
         .from('menu_items')
         .select('*')
-        .order('created_at')
+        .order('created_at');
 
-      if (menuItemsError) throw menuItemsError
+      if (menuItemsError) {
+        console.error('Menu items error:', menuItemsError);
+        throw new Error(`Menü öğeleri yüklenirken bir hata oluştu: ${menuItemsError.message}\nHata detayı: ${JSON.stringify(menuItemsError)}`);
+      }
 
-      setCategories(categoriesData || [])
-      setMenuItems(menuItemsData || [])
-      setLoading(false)
+      if (!categoriesData) {
+        console.warn('No categories found');
+      }
+      
+      if (!menuItemsData) {
+        console.warn('No menu items found');
+      }
+
+      setCategories(categoriesData || []);
+      setMenuItems(menuItemsData || []);
     } catch (error) {
-      console.error('Error:', error)
-      setLoading(false)
+      console.error('Error in fetchData:', error);
+      const errorMessage = error instanceof Error 
+        ? `Hata: ${error.message}` 
+        : 'Veriler yüklenirken bilinmeyen bir hata oluştu';
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   const handleDeleteCategory = async (id: number) => {
     try {
