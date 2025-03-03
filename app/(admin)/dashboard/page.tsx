@@ -271,7 +271,7 @@ export default function DashboardPage() {
                 title="Menüyü Görüntüle"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </Link>
               <button
@@ -464,14 +464,15 @@ export default function DashboardPage() {
                           )}
                           <div>
                             <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
+                            <span className="text-sm text-gray-500">
+                                {categories.find(cat => cat.id === item.category_id)?.name}
+                              </span>
                             <p className="text-gray-600 text-sm my-2 pr-12">
                               {truncateDescription(item.description)}
                             </p>
                             <div className="mt-2 flex items-center gap-3">
                               <p className="text-lg font-bold text-[#141414]">₺{item.price}</p>
-                              <span className="text-sm text-gray-500">
-                                {categories.find(cat => cat.id === item.category_id)?.name}
-                              </span>
+                              
                             </div>
                           </div>
                         </div>

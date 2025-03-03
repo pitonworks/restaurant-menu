@@ -269,7 +269,9 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
             .from('subcategories')
             .update({
               name: subcategory.name,
-              order: subcategory.order
+              order: subcategory.order,
+              description: subcategory.description || null,
+              image_url: subcategory.image_url || null
             })
             .eq('id', subcategory.id)
 
@@ -281,7 +283,9 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
             .insert({
               name: subcategory.name,
               category_id: parseInt(params.id),
-              order: subcategory.order
+              order: subcategory.order,
+              description: subcategory.description || null,
+              image_url: subcategory.image_url || null
             })
 
           if (error) throw error
