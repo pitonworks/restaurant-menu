@@ -111,7 +111,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
               <div className="md:w-1/2 lg:w-2/5">
                 <div className="relative aspect-square w-full">
                   <Image
-                    src={menuItem.image_url}
+                    src={menuItem.image_url || '/images/default-photo.jpeg'}
                     alt={menuItem.name}
                     fill
                     className="object-cover"
@@ -164,7 +164,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                   >
                     <div className="relative aspect-square">
                       <Image
-                        src={item.image_url || '/images/default-food.jpg'}
+                        src={item.image_url || '/images/default-photo.jpeg'}
                         alt={item.name}
                         fill
                         className="object-cover"

@@ -194,7 +194,7 @@ function CategoryList({
                       <div className="flex items-center space-x-2">
                         <div className="relative w-8 h-8 rounded-md overflow-hidden">
                           <Image
-                            src={category.image_url || '/images/default-category.jpg'}
+                            src={category.image_url || '/images/default-photo.jpeg'}
                             alt={category.name}
                             fill
                             className="object-cover"
@@ -251,7 +251,7 @@ function CategoryList({
                               <div className="flex items-center space-x-3">
                                 <div className="relative w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                                   <Image
-                                    src={subcategory.image_url || '/images/default-category.jpg'}
+                                    src={subcategory.image_url || '/images/default-photo.jpeg'}
                                     alt={subcategory.name}
                                     fill
                                     className="object-cover"
@@ -637,7 +637,7 @@ export default function Dashboard() {
                       <div className="flex items-center space-x-4">
                         <div className="relative w-20 h-20 aspect-square rounded-lg overflow-hidden flex-shrink-0">
                           <Image
-                            src={item.image_url || '/images/default-menu-item.jpg'}
+                            src={item.image_url || '/images/default-photo.jpeg'}
                             alt={item.name}
                             fill
                             className="object-cover"
