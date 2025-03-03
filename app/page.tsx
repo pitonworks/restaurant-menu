@@ -161,7 +161,7 @@ export default function HomePage() {
                 />
               </div>
               <div className="p-4 text-center bg-white">
-                <h3 className="text-lg font-medium text-[#141414]">{category.name}</h3>
+                <h3 className="text-lg font-medium text-[#2665B0]">{category.name}</h3>
               </div>
             </Link>
           ))}

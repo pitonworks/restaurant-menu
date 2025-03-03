@@ -111,7 +111,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
               <div className="md:w-1/2 lg:w-2/5">
                 <div className="relative aspect-square w-full">
                   <Image
-                    src={menuItem.image_url || '/images/default-food.jpg'}
+                    src={menuItem.image_url}
                     alt={menuItem.name}
                     fill
                     className="object-cover"
@@ -134,7 +134,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                 {/* Description */}
                 {menuItem.description && (
                   <div>
-                    <h2 className="text-lg font-semibold text-[#141414] mb-2">Açıklama</h2>
+                    <h2 className="text-lg font-semibold text-[#141414] mb-2">Detaylar</h2>
                     <p className="text-gray-600">{menuItem.description}</p>
                   </div>
                 )}

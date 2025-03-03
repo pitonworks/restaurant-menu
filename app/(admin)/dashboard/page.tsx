@@ -85,6 +85,7 @@ export default function DashboardPage() {
   const [newCategory, setNewCategory] = useState('')
   const [error, setError] = useState('')
   const [enabled, setEnabled] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   const router = useRouter()
   const supabase = createClientComponentClient()
@@ -92,8 +93,21 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isBrowser) {
       setEnabled(true)
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth <= 768)
+      }
+      checkMobile()
+      window.addEventListener('resize', checkMobile)
+      return () => window.removeEventListener('resize', checkMobile)
     }
   }, [])
+
+  const truncateDescription = (description: string) => {
+    if (!isMobile) return description
+    const words = description.split(' ')
+    if (words.length <= 6) return description
+    return words.slice(0, 6).join(' ') + '...'
+  }
 
   const fetchData = async () => {
     try {
@@ -394,7 +408,7 @@ export default function DashboardPage() {
                       href="/dashboard/add-item"
                       className="bg-[#141414] text-white px-4 py-2 rounded hover:bg-gray-800"
                     >
-                      + Yeni Öğe Ekle
+                      + Yeni
                     </Link>
                   </div>
                 </div>
@@ -425,7 +439,9 @@ export default function DashboardPage() {
                           )}
                           <div>
                             <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
-                            <p className="text-gray-600 text-sm my-2 pr-12">{item.description}</p>
+                            <p className="text-gray-600 text-sm my-2 pr-12">
+                              {truncateDescription(item.description)}
+                            </p>
                             <div className="mt-2 flex items-center gap-3">
                               <p className="text-lg font-bold text-[#141414]">₺{item.price}</p>
                               <span className="text-sm text-gray-500">
@@ -437,15 +453,21 @@ export default function DashboardPage() {
                         <div className="flex items-center space-x-2">
                           <Link
                             href={`/dashboard/edit-item/${item.id}`}
-                            className="text-blue-600 hover:text-blue-800 px-3 py-1"
+                            className="p-1 text-blue-600 hover:text-blue-800 rounded"
+                            title="Düzenle"
                           >
-                            Düzenle
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
                           </Link>
                           <button
                             onClick={() => handleDeleteMenuItem(item.id)}
-                            className="text-red-600 hover:text-red-800 px-3 py-1"
+                            className="p-1 text-red-600 hover:text-red-800 rounded"
+                            title="Sil"
                           >
-                            Sil
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                           </button>
                         </div>
                       </div>
