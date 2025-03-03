@@ -189,7 +189,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
   const addSubcategory = () => {
     setSubcategories([...subcategories, { 
-      id: Date.now(),
+      id: -Date.now(), // Negative ID for new subcategories
       name: '',
       category_id: parseInt(params.id),
       order: subcategories.length,
@@ -263,7 +263,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       for (const subcategory of subcategories) {
         if (!subcategory.name.trim()) continue
 
-        if (subcategory.id && subcategory.id > 0) {
+        if (subcategory.id > 0) {
           // Mevcut alt kategoriyi güncelle
           const { error } = await supabase
             .from('subcategories')
@@ -277,7 +277,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
           if (error) throw error
         } else {
-          // Yeni alt kategori ekle
+          // Yeni alt kategori ekle (negatif ID'ye sahip olanlar)
           const { error } = await supabase
             .from('subcategories')
             .insert({
