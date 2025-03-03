@@ -288,6 +288,31 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      <nav className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex space-x-8">
+            <Link
+              href="/dashboard"
+              className="border-b-2 border-[#141414] px-3 py-4 text-sm font-medium text-[#141414]"
+            >
+              Menüler
+            </Link>
+            <Link
+              href="/dashboard/qr"
+              className="border-b-2 border-transparent px-3 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+            >
+              QR Kodlar
+            </Link>
+            <Link
+              href="/dashboard/settings"
+              className="border-b-2 border-transparent px-3 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+            >
+              Ayarlar
+            </Link>
+          </div>
+        </div>
+      </nav>
+
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-[#141414]">Menü</h2>
