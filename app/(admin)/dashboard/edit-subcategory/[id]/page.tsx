@@ -126,6 +126,8 @@ export default function EditSubcategoryPage({ params }: { params: { id: string }
         finalImageUrl = await uploadImage(uploadedImage)
       }
 
+      const subcategoryId = getSubcategoryId(params.id)
+
       const { error } = await supabase
         .from('subcategories')
         .update({
@@ -133,7 +135,7 @@ export default function EditSubcategoryPage({ params }: { params: { id: string }
           description,
           image_url: finalImageUrl,
         })
-        .eq('id', params.id)
+        .eq('id', subcategoryId)
 
       if (error) throw error
 
@@ -150,10 +152,12 @@ export default function EditSubcategoryPage({ params }: { params: { id: string }
     if (!confirm('Bu alt kategoriyi silmek istediğinizden emin misiniz?')) return
 
     try {
+      const subcategoryId = getSubcategoryId(params.id)
+      
       const { error } = await supabase
         .from('subcategories')
         .delete()
-        .eq('id', params.id)
+        .eq('id', subcategoryId)
 
       if (error) throw error
 
