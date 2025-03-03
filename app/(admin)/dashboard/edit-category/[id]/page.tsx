@@ -254,6 +254,8 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
         }
       }
 
+      const categoryId = getCategoryId(params.id)
+
       // Kategoriyi güncelle
       const { error: categoryError } = await supabase
         .from('categories')
@@ -262,7 +264,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
           order,
           image_url: finalImageUrl,
         })
-        .eq('id', params.id)
+        .eq('id', categoryId)
 
       if (categoryError) throw categoryError
 
@@ -289,7 +291,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
             .from('subcategories')
             .insert({
               name: subcategory.name,
-              category_id: parseInt(params.id),
+              category_id: parseInt(categoryId),
               order: subcategory.order,
               description: subcategory.description || null,
               image_url: subcategory.image_url || null

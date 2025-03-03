@@ -169,6 +169,8 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
         finalImageUrl = await uploadImage(uploadedImage)
       }
 
+      const itemId = getItemId(params.id)
+
       const { error } = await supabase
         .from('menu_items')
         .update({
@@ -180,7 +182,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
           image_url: finalImageUrl,
           allergens,
         })
-        .eq('id', params.id)
+        .eq('id', itemId)
 
       if (error) throw error
 
