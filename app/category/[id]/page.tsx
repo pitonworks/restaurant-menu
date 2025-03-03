@@ -141,18 +141,14 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                 className="flex flex-col bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
               >
                 <div className="relative aspect-square">
-                  {subcategory.image_url ? (
-                    <Image
-                      src={subcategory.image_url}
-                      alt={subcategory.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 33vw"
-                      priority={true}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700" />
-                  )}
+                  <Image
+                    src={subcategory.image_url || '/images/default-photo.jpeg'}
+                    alt={subcategory.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    priority={true}
+                  />
                 </div>
                 <div className="p-4 text-center bg-white">
                   <h3 className="text-lg font-medium text-[#141414]">{subcategory.name}</h3>

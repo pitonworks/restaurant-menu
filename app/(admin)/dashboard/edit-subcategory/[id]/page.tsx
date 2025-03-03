@@ -32,16 +32,23 @@ export default function EditSubcategoryPage({ params }: { params: { id: string }
   const router = useRouter()
   const supabase = createClientComponentClient()
 
+  // ID'yi slug'dan çıkar
+  const getSubcategoryId = (slug: string): string => {
+    const parts = slug.split('-');
+    return parts[parts.length - 1] || '';
+  }
+
   useEffect(() => {
     fetchSubcategory()
   }, [])
 
   const fetchSubcategory = async () => {
     try {
+      const subcategoryId = getSubcategoryId(params.id)
       const { data: subcategory, error: subcategoryError } = await supabase
         .from('subcategories')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', subcategoryId)
         .single()
 
       if (subcategoryError) throw subcategoryError

@@ -60,6 +60,12 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
     maxFiles: 1
   })
 
+  // ID'yi slug'dan çıkar
+  const getItemId = (slug: string): string => {
+    const parts = slug.split('-');
+    return parts[parts.length - 1] || '';
+  };
+
   useEffect(() => {
     fetchCategories()
     fetchMenuItem()
@@ -105,10 +111,11 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
 
   const fetchMenuItem = async () => {
     try {
+      const itemId = getItemId(params.id);
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', itemId)
         .single()
 
       if (error) throw error

@@ -35,6 +35,12 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
   const router = useRouter()
   const supabase = createClientComponentClient()
 
+  // ID'yi slug'dan çıkar
+  const getCategoryId = (slug: string): string => {
+    const parts = slug.split('-');
+    return parts[parts.length - 1] || '';
+  }
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       setUploadedImage(acceptedFiles[0])
@@ -56,10 +62,11 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
   const fetchCategory = async () => {
     try {
+      const categoryId = getCategoryId(params.id)
       const { data: category, error } = await supabase
         .from('categories')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', categoryId)
         .single()
 
       if (error) throw error
