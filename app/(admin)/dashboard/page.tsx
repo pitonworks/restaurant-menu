@@ -46,34 +46,191 @@ const EMOJI_LIST = {
 }
 
 // Basit kategori listesi bileşeni
-function CategoryList({ categories, handleDeleteCategory }) {
+function CategoryList({ 
+  categories, 
+  handleDeleteCategory, 
+  setCategories, 
+  supabase, 
+  fetchData,
+  menuItems,
+  selectedCategory,
+  selectedSubcategory,
+  onCategoryClick,
+  onSubcategoryClick
+}: { 
+  categories: Category[],
+  handleDeleteCategory: (id: number) => void,
+  setCategories: (categories: Category[]) => void,
+  supabase: any,
+  fetchData: () => void,
+  menuItems: MenuItem[],
+  selectedCategory: number | null,
+  selectedSubcategory: number | null,
+  onCategoryClick: (categoryId: number | null) => void,
+  onSubcategoryClick: (categoryId: number, subcategoryId: number) => void
+}) {
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(categories);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Yeni sıralamayı state'e uygula
+    setCategories(items);
+
+    // Her kategorinin order değerini güncelle
+    const updates = items.map((category, index) => ({
+      id: category.id,
+      order: index
+    }));
+
+    // Supabase'de sıralamayı güncelle
+    try {
+      for (const update of updates) {
+        await supabase
+          .from('categories')
+          .update({ order: update.order })
+          .eq('id', update.id);
+      }
+    } catch (error) {
+      console.error('Error updating category orders:', error);
+      // Hata durumunda orijinal sıralamaya geri dön
+      fetchData();
+    }
+  };
+
+  // Kategori başına ürün sayısını hesapla
+  const getItemCount = (categoryId: number) => {
+    return menuItems.filter(item => item.category_id === categoryId).length;
+  };
+
   return (
-    <div className="space-y-4">
-      {categories.map((category) => (
-        <div
-          key={category.id}
-          className="bg-white rounded-lg shadow-md p-4"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-medium text-gray-900">{category.name}</span>
-            <div className="flex items-center space-x-3">
-              <Link
-                href={`/dashboard/edit-category/${category.id}`}
-                className="text-blue-600 hover:text-blue-800"
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <Droppable droppableId="categories">
+        {(provided) => (
+          <div 
+            {...provided.droppableProps}
+            ref={provided.innerRef}
+            className="space-y-4"
+          >
+            {categories.map((category, index) => (
+              <Draggable 
+                key={category.id} 
+                draggableId={`category-${category.id}`} 
+                index={index}
               >
-                Düzenle
-              </Link>
-              <button
-                onClick={() => handleDeleteCategory(category.id)}
-                className="text-red-600 hover:text-red-800"
-              >
-                Sil
-              </button>
-            </div>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    className={`bg-white rounded-lg shadow-md overflow-hidden w-full ${
+                      snapshot.isDragging ? 'shadow-lg ring-2 ring-gray-200' : ''
+                    }`}
+                  >
+                    <div 
+                      {...provided.dragHandleProps}
+                      className="p-4 bg-gray-50 border-b flex items-center justify-between cursor-move"
+                      onClick={() => onCategoryClick(category.id)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <span className={`text-lg font-medium ${selectedCategory === category.id ? 'text-blue-600' : 'text-gray-900'}`}>
+                          {category.name}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          ({getItemCount(category.id)} ürün)
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Link
+                          href={`/dashboard/edit-category/${category.id}`}
+                          className="p-1 text-blue-600 hover:text-blue-800 rounded"
+                          title="Düzenle"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </Link>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCategory(category.id);
+                          }}
+                          className="p-1 text-red-600 hover:text-red-800 rounded"
+                          title="Sil"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    {category.subcategories && category.subcategories.length > 0 && (
+                      <div className="p-4 bg-white">
+                        <div className="grid grid-cols-2 gap-3">
+                          {category.subcategories.map((subcategory) => (
+                            <div
+                              key={subcategory.id}
+                              className={`flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer ${
+                                selectedSubcategory === subcategory.id 
+                                  ? 'bg-blue-50 hover:bg-blue-100' 
+                                  : 'bg-gray-50 hover:bg-gray-100'
+                              }`}
+                              onClick={() => onSubcategoryClick(category.id, subcategory.id)}
+                            >
+                              <div className="flex items-center space-x-3">
+                                {subcategory.image_url && (
+                                  <div className="relative w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+                                    <Image
+                                      src={subcategory.image_url}
+                                      alt={subcategory.name}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  </div>
+                                )}
+                                <div>
+                                  <h4 className={`font-medium ${
+                                    selectedSubcategory === subcategory.id 
+                                      ? 'text-blue-600' 
+                                      : 'text-gray-900'
+                                  }`}>
+                                    {subcategory.name}
+                                  </h4>
+                                  {subcategory.description && (
+                                    <p className="text-xs text-gray-500 line-clamp-1">
+                                      {subcategory.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <Link
+                                href={`/dashboard/edit-subcategory/${subcategory.id}`}
+                                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </Link>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
           </div>
-        </div>
-      ))}
-    </div>
+        )}
+      </Droppable>
+    </DragDropContext>
   )
 }
 
@@ -81,6 +238,7 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [newCategory, setNewCategory] = useState('')
   const [error, setError] = useState('')
@@ -111,9 +269,15 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
+      // Kategorileri ve alt kategorileri birlikte çek
       const { data: categoriesData } = await supabase
         .from('categories')
-        .select('*')
+        .select(`
+          *,
+          subcategories (
+            *
+          )
+        `)
         .order('order', { ascending: true })
       
       const { data: menuItemsData } = await supabase
@@ -201,40 +365,28 @@ export default function DashboardPage() {
     }
   }
 
-  // Kategori filtreleme fonksiyonu
-  const filteredMenuItems = selectedCategory
-    ? menuItems.filter(item => item.category_id === selectedCategory)
-    : menuItems
-
-  const handleDragEnd = async (result) => {
-    if (!result.destination) return;
-
-    const items = Array.from(categories);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    // Yeni sıralamayı state'e uygula
-    setCategories(items);
-
-    // Her kategorinin order değerini güncelle
-    const updates = items.map((category, index) => ({
-      id: category.id,
-      order: index
-    }));
-
-    // Supabase'de sıralamayı güncelle
-    try {
-      for (const update of updates) {
-        await supabase
-          .from('categories')
-          .update({ order: update.order })
-          .eq('id', update.id);
-      }
-    } catch (error) {
-      console.error('Error updating category orders:', error);
-      // Hata durumunda orijinal sıralamaya geri dön
-      fetchData();
+  // Kategori ve alt kategori filtreleme fonksiyonu
+  const filteredMenuItems = menuItems.filter(item => {
+    if (selectedSubcategory) {
+      const category = categories.find(c => c.id === item.category_id);
+      return category?.subcategories?.some(sub => sub.id === selectedSubcategory);
     }
+    if (selectedCategory) {
+      return item.category_id === selectedCategory;
+    }
+    return true;
+  });
+
+  // Alt kategori seçildiğinde kategoriyi de otomatik seç
+  const handleSubcategoryClick = (categoryId: number, subcategoryId: number) => {
+    setSelectedCategory(categoryId);
+    setSelectedSubcategory(subcategoryId);
+  };
+
+  // Kategori seçildiğinde alt kategori seçimini sıfırla
+  const handleCategoryClick = (categoryId: number | null) => {
+    setSelectedCategory(categoryId);
+    setSelectedSubcategory(null);
   };
 
   if (loading) {
@@ -321,7 +473,7 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
             {/* Kategoriler Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow">
                 <div className="p-6 border-b flex justify-between items-center">
                   <h3 className="font-semibold text-[#141414]">Kategoriler</h3>
@@ -337,7 +489,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="p-4">
                   <button
-                    onClick={() => setSelectedCategory(null)}
+                    onClick={() => handleCategoryClick(null)}
                     className={`w-full text-left px-4 py-2 rounded-md mb-2 ${
                       selectedCategory === null
                         ? 'bg-gray-100 text-[#141414]'
@@ -346,88 +498,33 @@ export default function DashboardPage() {
                   >
                     Tümü ({menuItems.length})
                   </button>
-                  <DragDropContext onDragEnd={handleDragEnd}>
-                    <Droppable droppableId="categories">
-                      {(provided) => (
-                        <div
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                        >
-                          {categories.map((category, index) => (
-                            <Draggable
-                              key={category.id}
-                              draggableId={category.id.toString()}
-                              index={index}
-                            >
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className={`flex items-center justify-between mb-2 group ${
-                                    snapshot.isDragging ? 'bg-gray-50' : ''
-                                  }`}
-                                >
-                                  <button
-                                    onClick={() => setSelectedCategory(category.id)}
-                                    className={`flex-grow text-left px-4 py-2 rounded-md ${
-                                      selectedCategory === category.id
-                                        ? 'bg-gray-100 text-[#141414]'
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                                  >
-                                    <div className="flex items-center">
-                                      <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                                      </svg>
-                                      {category.name} ({menuItems.filter(item => item.category_id === category.id).length})
-                                    </div>
-                                  </button>
-                                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Link
-                                      href={`/dashboard/edit-category/${category.id}`}
-                                      className="p-1 text-blue-600 hover:text-blue-800 rounded"
-                                      title="Kategoriyi Düzenle"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                      </svg>
-                                    </Link>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteCategory(category.id);
-                                      }}
-                                      className="p-1 text-red-600 hover:text-red-800 rounded"
-                                      title="Kategoriyi Sil"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
+                  <CategoryList 
+                    categories={categories} 
+                    handleDeleteCategory={handleDeleteCategory}
+                    setCategories={setCategories}
+                    supabase={supabase}
+                    fetchData={fetchData}
+                    menuItems={menuItems}
+                    selectedCategory={selectedCategory}
+                    selectedSubcategory={selectedSubcategory}
+                    onCategoryClick={handleCategoryClick}
+                    onSubcategoryClick={handleSubcategoryClick}
+                  />
                 </div>
               </div>
             </div>
 
             {/* Menü Öğeleri */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow">
                 <div className="p-6 border-b">
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold text-[#141414]">
-                      {selectedCategory 
-                        ? `${categories.find(c => c.id === selectedCategory)?.name} Menü Öğeleri`
-                        : 'Tüm Menü Öğeleri'}
+                      {selectedSubcategory 
+                        ? `${categories.find(c => c.subcategories?.some(s => s.id === selectedSubcategory))?.subcategories?.find(s => s.id === selectedSubcategory)?.name} Menü Öğeleri`
+                        : selectedCategory 
+                          ? `${categories.find(c => c.id === selectedCategory)?.name} Menü Öğeleri`
+                          : 'Tüm Menü Öğeleri'}
                     </h3>
                     <Link
                       href="/dashboard/add-item"
@@ -441,9 +538,11 @@ export default function DashboardPage() {
                 <div className="divide-y">
                   {filteredMenuItems.length === 0 ? (
                     <div className="p-6 text-center text-gray-500">
-                      {selectedCategory 
-                        ? 'Bu kategoride henüz menü öğesi bulunmuyor'
-                        : 'Henüz menü öğesi eklenmemiş'}
+                      {selectedSubcategory 
+                        ? 'Bu alt kategoride henüz menü öğesi bulunmuyor'
+                        : selectedCategory
+                          ? 'Bu kategoride henüz menü öğesi bulunmuyor'
+                          : 'Henüz menü öğesi eklenmemiş'}
                     </div>
                   ) : (
                     filteredMenuItems.map((item) => (
