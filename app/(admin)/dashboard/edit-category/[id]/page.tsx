@@ -321,7 +321,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
           <div className="space-y-6">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-[#141414]">
+              <label htmlFor="name" className="block text-sm font-bold text-[#141414]">
                 Kategori Adı
               </label>
               <input
@@ -336,8 +336,8 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
             </div>
 
             <div>
-              <label htmlFor="order" className="block text-sm font-medium text-[#141414]">
-                Sıralama (Küçük sayı = Üstte gösterilir)
+              <label htmlFor="order" className="block text-sm font-bold text-[#141414]">
+                Sıralama
               </label>
               <input
                 type="number"
@@ -350,7 +350,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#141414] mb-2">
+              <label className="block text-sm font-bold text-[#141414] mb-2">
                 Kategori Görseli
               </label>
               <div
@@ -412,7 +412,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
             <div>
               <div className="flex justify-between items-center mb-4">
-                <label className="block text-sm font-medium text-[#141414]">
+                <label className="block text-sm font-bold text-[#141414]">
                   Alt Kategoriler
                 </label>
                 <button
@@ -475,7 +475,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
                               <button
                                 type="button"
                                 onClick={() => updateSubcategory(subcategory, { image_url: '' })}
-                                className="absolute -top-1 -right-1 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 shadow-lg"
+                                className="absolute -top-1 -right-1 bg-blue-600 text-white p-1 rounded-full hover:bg-blue-700 shadow-lg"
                               >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -498,7 +498,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
                                   }
                                 }
                               }}
-                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 [&::-webkit-file-upload-button]:hidden [&::file-selector-button]:hidden before:content-['Görsel_seç'] before:mr-4 before:py-2 before:px-4 before:rounded-full before:border-0 before:text-sm before:font-semibold before:bg-gray-100 before:text-gray-700 hover:before:bg-gray-200 before:cursor-pointer"
                             />
                           </div>
                         </div>

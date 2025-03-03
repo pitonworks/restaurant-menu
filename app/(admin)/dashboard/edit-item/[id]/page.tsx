@@ -210,7 +210,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-[#141414]">
+              <label htmlFor="name" className="block text-sm font-bold text-[#141414]">
                 Ürün Adı
               </label>
               <input
@@ -225,7 +225,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-[#141414]">
+              <label htmlFor="description" className="block text-sm font-bold text-[#141414]">
                 Açıklama
               </label>
               <textarea
@@ -239,7 +239,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
             </div>
 
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-[#141414]">
+              <label htmlFor="price" className="block text-sm font-bold text-[#141414]">
                 Fiyat
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
@@ -261,7 +261,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
             </div>
 
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-[#141414]">
+              <label htmlFor="category" className="block text-sm font-bold text-[#141414]">
                 Kategori
               </label>
               <select
@@ -282,7 +282,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
 
             {subcategories.length > 0 && (
               <div>
-                <label htmlFor="subcategory" className="block text-sm font-medium text-[#141414]">
+                <label htmlFor="subcategory" className="block text-sm font-bold text-[#141414]">
                   Alt Kategori
                 </label>
                 <select
@@ -302,7 +302,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-[#141414] mb-2">
+              <label className="block text-sm font-bold text-[#141414] mb-2">
                 Görsel
               </label>
               <div className="space-y-4">
@@ -371,7 +371,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
             </div>
 
             <div>
-              <label htmlFor="allergens" className="block text-sm font-medium text-[#141414]">
+              <label htmlFor="allergens" className="block text-sm font-bold text-[#141414]">
                 Alerjenler
               </label>
               <textarea
