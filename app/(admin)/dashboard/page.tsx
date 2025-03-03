@@ -438,6 +438,26 @@ export default function Dashboard() {
                 priority
               />
             </div>
+            <div className="flex space-x-8">
+              <Link
+                href="/dashboard"
+                className="border-b-2 border-[#141414] px-3 py-2 text-sm font-medium text-[#141414]"
+              >
+                Menüler
+              </Link>
+              <Link
+                href="/dashboard/qr"
+                className="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+              >
+                QR Kodlar
+              </Link>
+              <Link
+                href="/dashboard/settings"
+                className="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+              >
+                Ayarlar
+              </Link>
+            </div>
             <div className="flex items-center space-x-4">
               <Link 
                 href="/"
@@ -465,26 +485,7 @@ export default function Dashboard() {
       <nav className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col space-y-2 py-4">
-            <div className="flex space-x-8">
-              <Link
-                href="/dashboard"
-                className="border-b-2 border-[#141414] px-3 py-2 text-sm font-medium text-[#141414]"
-              >
-                Menüler
-              </Link>
-              <Link
-                href="/dashboard/qr"
-                className="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
-              >
-                QR Kodlar
-              </Link>
-              <Link
-                href="/dashboard/settings"
-                className="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
-              >
-                Ayarlar
-              </Link>
-            </div>
+            
             <div className="flex items-center space-x-2 text-sm text-gray-500 px-3">
               <button 
                 className={`cursor-pointer ${!selectedCategory ? 'text-[#141414] font-medium' : 'hover:text-gray-700'}`}
