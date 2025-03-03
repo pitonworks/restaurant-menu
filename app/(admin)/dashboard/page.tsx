@@ -607,7 +607,10 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
-                          <p className="text-gray-600">{item.description}</p>
+                          <p className="text-gray-600 line-clamp-1 max-w-[200px]">
+                            {item.description.split(' ').slice(0, 6).join(' ')}
+                            {item.description.split(' ').length > 6 ? '...' : ''}
+                          </p>
                           <p className="text-[#2666AE] font-bold mt-1">₺{item.price}</p>
                         </div>
                       </div>
