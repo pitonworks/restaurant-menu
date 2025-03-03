@@ -11,6 +11,12 @@ interface Category {
   image_url?: string
 }
 
+// ID'yi slug'dan çıkar
+const getCategoryId = (slug: string): string => {
+  const parts = slug.split('-');
+  return parts[parts.length - 1] || '';
+};
+
 interface Subcategory {
   id: number
   name: string
@@ -49,21 +55,21 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
       const { data: categoryData } = await supabase
         .from('categories')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', getCategoryId(params.id))
         .single()
 
       // Fetch subcategories
       const { data: subcategoriesData } = await supabase
         .from('subcategories')
         .select('*')
-        .eq('category_id', params.id)
+        .eq('category_id', getCategoryId(params.id))
         .order('order')
 
       // Fetch menu items
       const { data: menuItemsData } = await supabase
         .from('menu_items')
         .select('*')
-        .eq('category_id', params.id)
+        .eq('category_id', getCategoryId(params.id))
         .order('name')
 
       if (categoryData) setCategory(categoryData)

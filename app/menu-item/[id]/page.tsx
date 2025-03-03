@@ -18,6 +18,12 @@ interface MenuItem {
   }
 }
 
+// ID'yi slug'dan çıkar
+const getItemId = (slug: string): string => {
+  const parts = slug.split('-');
+  return parts[parts.length - 1] || '';
+};
+
 export default function MenuItemPage({ params }: { params: { id: string } }) {
   const [menuItem, setMenuItem] = useState<MenuItem | null>(null)
   const [similarItems, setSimilarItems] = useState<MenuItem[]>([])
@@ -38,7 +44,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
           *,
           category:categories(name)
         `)
-        .eq('id', params.id)
+        .eq('id', getItemId(params.id))
         .single()
 
       if (itemData) {
