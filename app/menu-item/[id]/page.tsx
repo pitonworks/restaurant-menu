@@ -119,7 +119,6 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                   />
                 </div>
               </div>
-
               {/* Content */}
               <div className="md:w-1/2 lg:w-3/5 p-6 space-y-4">
                 {/* Title and Price */}
