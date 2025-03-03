@@ -248,7 +248,7 @@ export default function AddItemPage() {
                   onChange={(e) => setSubcategoryId(e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
                 >
-                  <option value="">Alt Kategori Seçin (Opsiyonel)</option>
+                  <option value="">Alt Kategori Seçin</option>
                   {subcategories.map((subcategory) => (
                     <option key={subcategory.id} value={subcategory.id}>
                       {subcategory.name}
