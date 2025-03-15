@@ -23,7 +23,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/images/eagle-nest-logo.png" />
         <link rel="stylesheet" type="text/css" href="/css/custom.css" />
       </head>
       <body className={roboto.className}>
