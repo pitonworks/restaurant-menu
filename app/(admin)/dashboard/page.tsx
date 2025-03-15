@@ -12,7 +12,8 @@ const isBrowser = typeof window !== 'undefined'
 
 interface Category {
   id: number
-  name: string
+  name_en: string
+  name_tr: string
   image_url: string
   order: number
   created_at: string
@@ -22,17 +23,21 @@ interface Category {
 
 interface Subcategory {
   id: number
-  name: string
+  name_en: string
+  name_tr: string
   category_id: number
   order: number
   image_url?: string
-  description?: string
+  description_en?: string
+  description_tr?: string
 }
 
 interface MenuItem {
   id: number
-  name: string
-  description: string
+  name_en: string
+  name_tr: string
+  description_en: string
+  description_tr: string
   price: number
   category_id: number
   subcategory_id: number | null
@@ -92,7 +97,9 @@ function DeleteModal({ isOpen, onClose, onConfirm, itemName, itemType }: DeleteM
 }
 
 // Slug oluşturma fonksiyonu
-const createSlug = (text: string, id: number): string => {
+const createSlug = (text: string | undefined | null, id: number): string => {
+  if (!text) return `item-${id}`; // Eğer text undefined veya null ise default değer döndür
+
   const turkishChars: { [key: string]: string } = {
     'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'ö': 'o', 'ç': 'c',
     'Ğ': 'G', 'Ü': 'U', 'Ş': 'S', 'İ': 'I', 'Ö': 'O', 'Ç': 'C'
@@ -205,7 +212,7 @@ function CategoryList({
                           <div className="relative w-8 h-8 rounded-md overflow-hidden">
                             <Image
                               src={category.image_url || '/images/default-photo.jpeg'}
-                              alt={category.name}
+                              alt={category.name_tr}
                               fill
                               className="object-cover"
                             />
@@ -214,7 +221,7 @@ function CategoryList({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                           </svg>
                           <span className={`text-lg font-medium ${selectedCategory === category.id ? 'text-blue-600' : 'text-gray-900'}`}>
-                            {category.name}
+                            {category.name_tr}
                           </span>
                           <span className="text-sm text-gray-500">
                             ({getItemCount(category.id)} ürün)
@@ -222,7 +229,7 @@ function CategoryList({
                         </div>
                         <div className="flex items-center space-x-3">
                           <Link
-                            href={`/dashboard/edit-category/${createSlug(category.name, category.id)}`}
+                            href={`/dashboard/edit-category/${createSlug(category.name_tr, category.id)}`}
                             className="p-1 text-blue-600 hover:text-blue-800 rounded"
                             title="Düzenle"
                             onClick={(e) => e.stopPropagation()}
@@ -234,7 +241,7 @@ function CategoryList({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              openDeleteModal(category.id, category.name, 'category');
+                              openDeleteModal(category.id, category.name_tr, 'category');
                             }}
                             className="p-1 text-red-600 hover:text-red-800 rounded"
                             title="Sil"
@@ -262,7 +269,7 @@ function CategoryList({
                                   <div className="relative w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                                     <Image
                                       src={subcategory.image_url || '/images/default-category.jpg'}
-                                      alt={subcategory.name}
+                                      alt={subcategory.name_tr}
                                       fill
                                       className="object-cover"
                                     />
@@ -272,12 +279,12 @@ function CategoryList({
                                       ? 'text-blue-600' 
                                       : 'text-gray-900'
                                   }`}>
-                                    {subcategory.name}
+                                    {subcategory.name_tr}
                                   </h4>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <Link
-                                    href={`/dashboard/edit-subcategory/${createSlug(subcategory.name, subcategory.id)}`}
+                                    href={`/dashboard/edit-subcategory/${createSlug(subcategory.name_tr, subcategory.id)}`}
                                     className="text-blue-600 hover:text-blue-800 p-1 rounded"
                                     onClick={(e) => e.stopPropagation()}
                                   >
@@ -288,7 +295,7 @@ function CategoryList({
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      openDeleteModal(subcategory.id, subcategory.name, 'category');
+                                      openDeleteModal(subcategory.id, subcategory.name_tr, 'category');
                                     }}
                                     className="text-red-600 hover:text-red-800 p-1 rounded"
                                   >
@@ -352,35 +359,49 @@ export default function Dashboard() {
       // Kategorileri çek
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
-        .select('*, subcategories(*)')
+        .select(`
+          id,
+          name_en,
+          name_tr,
+          image_url,
+          order,
+          created_at,
+          subcategories (
+            id,
+            name_en,
+            name_tr,
+            category_id,
+            order,
+            image_url,
+            description_en,
+            description_tr
+          )
+        `)
         .order('order');
 
       if (categoriesError) {
         console.error('Categories error:', categoriesError);
-        throw new Error(`Kategori bilgileri yüklenirken bir hata oluştu: ${categoriesError.message}\nHata detayı: ${JSON.stringify(categoriesError)}`);
+        throw new Error(`Kategori bilgileri yüklenirken bir hata oluştu: ${categoriesError.message}`);
       }
 
       // Menü öğelerini çek
       const { data: menuItemsData, error: menuItemsError } = await supabase
         .from('menu_items')
         .select('*')
-        .order('created_at');
+        .order('name_tr', { ascending: true });
 
       if (menuItemsError) {
         console.error('Menu items error:', menuItemsError);
-        throw new Error(`Menü öğeleri yüklenirken bir hata oluştu: ${menuItemsError.message}\nHata detayı: ${JSON.stringify(menuItemsError)}`);
+        throw new Error(`Menü öğeleri yüklenirken bir hata oluştu: ${menuItemsError.message}`);
       }
 
-      if (!categoriesData) {
-        console.warn('No categories found');
-      }
+      // Debug logları
+      console.log('Categories:', categoriesData);
+      console.log('Menu Items:', menuItemsData);
+
+      if (categoriesData) setCategories(categoriesData);
+      if (menuItemsData) setMenuItems(menuItemsData);
       
-      if (!menuItemsData) {
-        console.warn('No menu items found');
-      }
-
-      setCategories(categoriesData || []);
-      setMenuItems(menuItemsData || []);
     } catch (error) {
       console.error('Error in fetchData:', error);
       const errorMessage = error instanceof Error 
@@ -445,23 +466,49 @@ export default function Dashboard() {
   }
 
   const filteredMenuItems = menuItems.filter(item => {
+    // Veri tipi kontrolü
+    const itemCategoryId = Number(item.category_id);
+    
+    // Alt kategori seçiliyse
     if (selectedSubcategory) {
-      return item.subcategory_id === selectedSubcategory
+      // Eğer ürünün subcategory_id'si null ise false döndür
+      if (!item.subcategory_id) return false;
+      return Number(item.subcategory_id) === selectedSubcategory;
     }
+    
+    // Sadece ana kategori seçiliyse
     if (selectedCategory) {
-      return item.category_id === selectedCategory
+      return itemCategoryId === selectedCategory;
     }
-    return true
-  })
+    
+    // Hiçbir filtre seçili değilse tüm ürünleri göster
+    return true;
+  });
 
-  const handleSubcategoryClick = (categoryId: number, subcategoryId: number) => {
-    setSelectedCategory(categoryId)
-    setSelectedSubcategory(subcategoryId)
-  }
+  // Debug için
+  console.log('Filtered Items:', {
+    totalItems: menuItems.length,
+    filteredCount: filteredMenuItems.length,
+    selectedCategory,
+    selectedSubcategory,
+    items: filteredMenuItems.map(item => ({
+      id: item.id,
+      name: item.name_tr,
+      categoryId: item.category_id,
+      subcategoryId: item.subcategory_id
+    }))
+  });
 
   const handleCategoryClick = (categoryId: number | null) => {
-    setSelectedCategory(categoryId)
-    setSelectedSubcategory(null)
+    console.log('Category clicked:', categoryId);
+    setSelectedCategory(categoryId);
+    setSelectedSubcategory(null);
+  }
+
+  const handleSubcategoryClick = (categoryId: number, subcategoryId: number) => {
+    console.log('Subcategory clicked:', { categoryId, subcategoryId });
+    setSelectedCategory(categoryId);
+    setSelectedSubcategory(subcategoryId);
   }
 
   if (loading) {
@@ -554,7 +601,7 @@ export default function Dashboard() {
                     className={`cursor-pointer ${selectedSubcategory ? 'hover:text-gray-700' : 'text-[#141414] font-medium'}`}
                     onClick={() => setSelectedSubcategory(null)}
                   >
-                    {categories.find(c => c.id === selectedCategory)?.name}
+                    {categories.find(c => c.id === selectedCategory)?.name_tr}
                   </button>
                 </>
               )}
@@ -568,7 +615,7 @@ export default function Dashboard() {
                     onClick={() => setSelectedSubcategory(null)}
                   >
                     {categories.find(c => c.subcategories?.some(s => s.id === selectedSubcategory))
-                      ?.subcategories?.find(s => s.id === selectedSubcategory)?.name}
+                      ?.subcategories?.find(s => s.id === selectedSubcategory)?.name_tr}
                   </button>
                 </>
               )}
@@ -649,23 +696,23 @@ export default function Dashboard() {
                         <div className="relative w-20 h-20 aspect-square rounded-lg overflow-hidden flex-shrink-0">
                           <Image
                             src={item.image_url || '/images/default-photo.jpeg'}
-                            alt={item.name}
+                            alt={item.name_tr}
                             fill
                             className="object-cover"
                           />
                         </div>
                         <div>
-                          <h3 className="text-lg font-medium text-[#141414]">{item.name}</h3>
+                          <h3 className="text-lg font-medium text-[#141414]">{item.name_tr}</h3>
                           <p className="text-gray-600 line-clamp-1 max-w-[200px]">
-                            {item.description.split(' ').slice(0, 6).join(' ')}
-                            {item.description.split(' ').length > 6 ? '...' : ''}
+                            {(item.description_tr ?? '').split(' ').slice(0, 6).join(' ')}
+                            {(item.description_tr?.split(' ')?.length ?? 0) > 6 ? '...' : ''}
                           </p>
                           <p className="text-[#2666AE] font-bold mt-1">₺{item.price}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
                         <Link
-                          href={`/dashboard/edit-item/${createSlug(item.name, item.id)}`}
+                          href={`/dashboard/edit-item/${createSlug(item.name_tr, item.id)}`}
                           className="p-2 text-blue-600 hover:text-blue-800 rounded"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -673,7 +720,7 @@ export default function Dashboard() {
                           </svg>
                         </Link>
                         <button
-                          onClick={() => openDeleteModal(item.id, item.name, 'menuItem')}
+                          onClick={() => openDeleteModal(item.id, item.name_tr, 'menuItem')}
                           className="p-2 text-red-600 hover:text-red-800 rounded"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

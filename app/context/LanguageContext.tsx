@@ -4,16 +4,16 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 interface LanguageContextType {
   language: string
-  toggleLanguage: () => void
+  setLanguage: (lang: string) => void
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  language: 'en',
-  toggleLanguage: () => {},
+  language: 'tr',
+  setLanguage: () => {},
 })
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState('en')
+  const [language, setLanguage] = useState('tr')
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('language')
@@ -22,14 +22,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const toggleLanguage = () => {
-    const newLanguage = language === 'en' ? 'tr' : 'en'
+  const handleLanguageChange = (newLanguage: string) => {
     setLanguage(newLanguage)
     localStorage.setItem('language', newLanguage)
   }
 
   return (
-    <LanguageContext.Provider value={{ language, toggleLanguage }}>
+    <LanguageContext.Provider value={{ language, setLanguage: handleLanguageChange }}>
       {children}
     </LanguageContext.Provider>
   )

@@ -3,15 +3,14 @@
 import { useLanguage } from '../context/LanguageContext'
 
 export default function LanguageToggle() {
-  const { language, toggleLanguage } = useLanguage()
+  const { language, setLanguage } = useLanguage()
 
   return (
     <button
-      onClick={toggleLanguage}
-      className="text-gray-600 hover:text-gray-900 font-medium text-sm"
-      aria-label={language === 'tr' ? 'Switch to English' : 'Türkçeye geç'}
+      onClick={() => setLanguage(language === 'tr' ? 'en' : 'tr')}
+      className="px-2 py-1 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
     >
-      {language === 'tr' ? 'TR' : 'EN'}
+      {language === 'tr' ? 'EN' : 'TR'}
     </button>
   )
 } 

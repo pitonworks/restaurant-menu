@@ -6,38 +6,39 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '../../context/LanguageContext'
+import LanguageToggle from '../../components/LanguageToggle'
 
 interface MenuItem {
   id: number
-  name: string
+  name_en: string
   name_tr: string
-  description: string
+  description_en: string
   description_tr: string
   price: number
   category_id: number
   subcategory_id: number | null
   image_url: string
-  allergens?: string
+  allergens_en?: string
   allergens_tr?: string
   category?: {
-    name: string
+    id: number
+    name_en: string
     name_tr: string
   }
   subcategory?: {
-    name: string
-    name_tr: string
     id: number
+    name_en: string
+    name_tr: string
   }
 }
 
 // ID'yi slug'dan çıkar
 const getItemId = (slug: string): string => {
-  const parts = slug.split('-');
-  return parts[parts.length - 1] || '';
+  return slug; // URL'den direkt ID'yi kullan
 };
 
 export default function MenuItemPage({ params }: { params: { id: string } }) {
-  const { language } = useLanguage()
+  const { language, setLanguage } = useLanguage()
   const [menuItem, setMenuItem] = useState<MenuItem | null>(null)
   const [similarItems, setSimilarItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,35 +52,71 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
     // Get the last category view from session storage
     const storedView = sessionStorage.getItem('lastCategoryView');
     setLastCategoryView(storedView);
-  }, [params.id])
+  }, [params.id, language])
 
   const fetchData = async () => {
     try {
-      // Fetch menu item details with category and subcategory names
-      const { data: itemData } = await supabase
+      const itemId = getItemId(params.id);
+      console.log('Fetching data for item ID:', itemId);
+      console.log('Current language:', language);
+
+      const { data: itemData, error } = await supabase
         .from('menu_items')
         .select(`
-          *,
-          category:categories(name, name_tr),
-          subcategory:subcategories(name, name_tr, id)
+          id,
+          name_en,
+          name_tr,
+          description_en,
+          description_tr,
+          price,
+          category_id,
+          subcategory_id,
+          image_url,
+          allergens_en,
+          allergens_tr,
+          category:categories!inner(id, name_en, name_tr),
+          subcategory:subcategories(id, name_en, name_tr)
         `)
-        .eq('id', getItemId(params.id))
+        .eq('id', itemId)
         .single()
 
+      if (error) {
+        console.error('Error fetching menu item:', error)
+        setLoading(false)
+        return
+      }
+
       if (itemData) {
-        setMenuItem(itemData)
+        console.log('Menu item data:', itemData)
+        // Veri yapısını MenuItem interface'ine uygun hale getir
+        const formattedMenuItem: MenuItem = {
+          ...itemData,
+          category: itemData.category[0],
+          subcategory: itemData.subcategory?.[0] || null
+        }
+        setMenuItem(formattedMenuItem)
         
         // Fetch similar items from the same subcategory if exists, otherwise from category
         const query = supabase
           .from('menu_items')
           .select(`
-            *,
-            category:categories(name, name_tr),
-            subcategory:subcategories(name, name_tr)
+            id,
+            name_en,
+            name_tr,
+            description_en,
+            description_tr,
+            price,
+            category_id,
+            subcategory_id,
+            image_url,
+            allergens_en,
+            allergens_tr,
+            category:categories!inner(id, name_en, name_tr),
+            subcategory:subcategories(id, name_en, name_tr)
           `)
           .neq('id', itemData.id)
           .limit(3)
-          .order(language === 'tr' ? 'name_tr' : 'name')
+          .order(language === 'tr' ? 'name_tr' : 'name_en')
 
         if (itemData.subcategory_id) {
           query.eq('subcategory_id', itemData.subcategory_id)
@@ -87,13 +124,27 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
           query.eq('category_id', itemData.category_id)
         }
 
-        const { data: similarData } = await query
-        if (similarData) setSimilarItems(similarData)
+        const { data: similarData, error: similarError } = await query
+        
+        if (similarError) {
+          console.error('Error fetching similar items:', similarError)
+        }
+
+        if (similarData) {
+          console.log('Similar items data:', similarData)
+          // Benzer ürünlerin veri yapısını da MenuItem interface'ine uygun hale getir
+          const formattedSimilarItems: MenuItem[] = similarData.map(item => ({
+            ...item,
+            category: item.category[0],
+            subcategory: item.subcategory?.[0] || null
+          }))
+          setSimilarItems(formattedSimilarItems)
+        }
       }
       
       setLoading(false)
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('Error in fetchData:', error)
       setLoading(false)
     }
   }
@@ -101,15 +152,25 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-2xl text-[#141414]">{language === 'tr' ? 'Yükleniyor...' : 'Loading...'}</div>
+        <div className="text-2xl text-[#141414]">
+          {language === 'tr' ? 'Yükleniyor...' : 'Loading...'}
+        </div>
       </div>
     )
   }
 
   if (!menuItem) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-xl text-[#141414]">{language === 'tr' ? 'Ürün bulunamadı' : 'Product not found'}</div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+        <div className="text-xl text-[#141414] mb-4">
+          {language === 'tr' ? 'Ürün bulunamadı' : 'Product not found'}
+        </div>
+        <Link 
+          href="/"
+          className="text-blue-600 hover:text-blue-800"
+        >
+          {language === 'tr' ? 'Ana Sayfaya Dön' : 'Return to Home Page'}
+        </Link>
       </div>
     )
   }
@@ -123,7 +184,6 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
             <button 
               onClick={() => {
                 if (menuItem) {
-                  // Eğer ürünün bir alt kategorisi varsa, o alt kategoriye dön
                   if (menuItem.subcategory_id) {
                     router.push(`/category/${menuItem.category_id}?subcategory=${menuItem.subcategory_id}`);
                   } else {
@@ -137,11 +197,13 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               <span className="subTitle">
-                {language === 'tr' ? menuItem.category?.name_tr : menuItem.category?.name}
-                {menuItem.subcategory && (
+                {language === 'tr' ? menuItem?.category?.name_tr : menuItem?.category?.name_en}
+                {menuItem?.subcategory && (
                   <>
-                    <span className="mx-2">/</span>
-                    {language === 'tr' ? menuItem.subcategory.name_tr : menuItem.subcategory.name}
+                    <svg className="w-4 h-4 text-gray-400 inline-block mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    {language === 'tr' ? menuItem.subcategory.name_tr : menuItem.subcategory.name_en}
                   </>
                 )}
               </span>
@@ -161,7 +223,7 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                 <div className="imgBox relative aspect-square w-full">
                   <Image
                     src={menuItem.image_url || '/images/default-photo.jpeg'}
-                    alt={language === 'tr' ? menuItem.name_tr : menuItem.name}
+                    alt={language === 'tr' ? menuItem.name_tr : menuItem.name_en}
                     fill
                     className="object-cover"
                     priority
@@ -172,31 +234,34 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
               <div className="itemDetailsWrapper">
                 {/* Title and Price */}
                 <div className="topWrapper">
-                    <p className="itemCat">
-                      {language === 'tr' ? menuItem.category?.name_tr : menuItem.category?.name}
-                      {menuItem.subcategory && (
-                        <>
-                          <span className="mx-2">/</span>
-                          {language === 'tr' ? menuItem.subcategory.name_tr : menuItem.subcategory.name}
-                        </>
-                      )}
-                    </p>
-                    <h1 className="itemName">{language === 'tr' ? menuItem.name_tr : menuItem.name}</h1>
-                    <p className="itemPrice">₺{menuItem.price}</p>
+                  <p className="itemCat">
+                    {language === 'tr' ? menuItem?.category?.name_tr : menuItem?.category?.name_en}
+                    {menuItem?.subcategory && (
+                      <>
+                        <svg className="w-4 h-4 text-gray-400 inline-block mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                        {language === 'tr' ? menuItem.subcategory.name_tr : menuItem.subcategory.name_en}
+                      </>
+                    )}
+                  </p>
+                  <h1 className="itemName">{language === 'tr' ? menuItem?.name_tr : menuItem?.name_en}</h1>
+                  <p className="itemPrice">₺{menuItem?.price}</p>
                 </div>
+
                 {/* Description */}
-                {(language === 'tr' ? menuItem.description_tr : menuItem.description) && (
+                {(language === 'tr' ? menuItem?.description_tr : menuItem?.description_en) && (
                   <div className="itemDesc">
-                    <p className="text-gray-600">{language === 'tr' ? menuItem.description_tr : menuItem.description}</p>
+                    <p className="text-gray-600">{language === 'tr' ? menuItem?.description_tr : menuItem?.description_en}</p>
                   </div>
                 )}
 
                 {/* Allergens */}
-                {(language === 'tr' ? menuItem.allergens_tr : menuItem.allergens) && (
+                {(language === 'tr' ? menuItem?.allergens_tr : menuItem?.allergens_en) && (
                   <div className="itemAllergens">
                     <h2 className="allergenTitle">{language === 'tr' ? 'Alerjen Bilgisi' : 'Allergen Information'}</h2>
                     <div className="bg-red-50 rounded-lg p-4">
-                      <p className="text-gray-600">{language === 'tr' ? menuItem.allergens_tr : menuItem.allergens}</p>
+                      <p className="text-gray-600">{language === 'tr' ? menuItem?.allergens_tr : menuItem?.allergens_en}</p>
                     </div>
                   </div>
                 )}
@@ -220,21 +285,21 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
                     <div className="relative aspect-square">
                       <Image
                         src={item.image_url || '/images/default-photo.jpeg'}
-                        alt={language === 'tr' ? item.name_tr : item.name}
+                        alt={language === 'tr' ? item.name_tr : item.name_en}
                         fill
                         className="object-cover"
                       />
                     </div>
                     <div className="p-4">
                       <h3 className="text-[#141414] font-medium">
-                        {language === 'tr' ? item.name_tr : item.name}
+                        {language === 'tr' ? item.name_tr : item.name_en}
                       </h3>
                       <p className="text-gray-600 text-sm">
-                        {language === 'tr' ? item.category?.name_tr : item.category?.name}
+                        {language === 'tr' ? item.category?.name_tr : item.category?.name_en}
                         {item.subcategory && (
                           <>
                             <span className="mx-1">/</span>
-                            {language === 'tr' ? item.subcategory.name_tr : item.subcategory.name}
+                            {language === 'tr' ? item.subcategory.name_tr : item.subcategory.name_en}
                           </>
                         )}
                       </p>

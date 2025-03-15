@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useLanguage } from './context/LanguageContext'
 import LanguageToggle from './components/LanguageToggle'
+import { useLanguage } from './context/LanguageContext'
 
 interface Category {
   id: number
-  name: string  // English name
+  name_en: string  // English name
   name_tr: string  // Turkish name
   image_url?: string 
   order: number
@@ -17,12 +17,15 @@ interface Category {
 
 interface MenuItem {
   id: number
-  name: string  // English name
-  name_tr: string  // Turkish name
-  description: string  // English description
-  description_tr: string  // Turkish description
+  name_en: string
+  name_tr: string
+  description_en: string
+  description_tr: string
+  allergens_en?: string
+  allergens_tr?: string
   price: number
   category_id: number
+  subcategory_id: number | null
   image_url: string
 }
 
@@ -38,11 +41,9 @@ export default function HomePage() {
 
   const fetchData = async () => {
     try {
-      console.log('Fetching data with language:', language) // Debug log
-      
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
-        .select('*')
+        .select('id, name_en, name_tr, image_url, order')
         .order('order', { ascending: true })
 
       if (categoriesError) {
@@ -52,20 +53,13 @@ export default function HomePage() {
 
       const { data: menuItemsData, error: menuItemsError } = await supabase
         .from('menu_items')
-        .select('*')
-        .order(language === 'tr' ? 'name_tr' : 'name')
+        .select('id, name_en, name_tr, description_en, description_tr, allergens_en, allergens_tr, price, category_id, subcategory_id, image_url')
+        .order(language === 'tr' ? 'name_tr' : 'name_en')
 
       if (menuItemsError) {
         console.error('Error fetching menu items:', menuItemsError)
         return
       }
-
-      // Debug logs
-      console.log('Categories data:', categoriesData?.map(cat => ({
-        id: cat.id,
-        name_tr: cat.name_tr,
-        name_en: cat.name
-      })))
 
       if (categoriesData) setCategories(categoriesData)
       if (menuItemsData) setMenuItems(menuItemsData)
@@ -87,8 +81,8 @@ export default function HomePage() {
   // Filter items based on search query
   const searchedItems = searchQuery
     ? filteredMenuItems.filter(item => {
-        const name = language === 'tr' ? item.name_tr : item.name
-        const description = language === 'tr' ? item.description_tr : item.description
+        const name = language === 'tr' ? item.name_tr : item.name_en
+        const description = language === 'tr' ? item.description_tr : item.description_en
         return name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                description.toLowerCase().includes(searchQuery.toLowerCase())
       })
@@ -111,14 +105,14 @@ export default function HomePage() {
             <div className="flex justify-center items-center w-full">
               <div className="flex items-center">
                 <Link href="/"> 
-                <Image
-                  src="/images/eagle-nest-logo.png"
-                  alt="Eagle's Nest"
-                  width={150}
-                  height={80}
-                  className="h-auto"
-                  priority
-                />
+                  <Image
+                    src="/images/eagle-nest-logo.png"
+                    alt="Eagle's Nest"
+                    width={150}
+                    height={80}
+                    className="h-auto"
+                    priority
+                  />
                 </Link>
               </div>
             </div>
@@ -150,7 +144,9 @@ export default function HomePage() {
                   <path d="M9 6.75c2 -.667 4 -.667 6 0" />
                 </svg>
               </a>
-              <LanguageToggle />
+              <div className="flex items-center">
+                <LanguageToggle />
+              </div>
             </div>
             <div className="w-full max-w-md searchBox cFullW">
               <div className="relative">
@@ -175,120 +171,69 @@ export default function HomePage() {
       {/* Categories Grid */}
       <main className="max-w-4xl mx-auto main-wrapper">
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 lg:grid-cols-3 CatCards">
-          {!searchQuery && categories.map((category) => {
-            // Debug log for each category
-            console.log('Rendering category:', {
-              id: category.id,
-              name_tr: category.name_tr,
-              name_en: category.name,
-              currentLanguage: language
-            })
-
-            return (
-              <Link
-                key={category.id}
-                href={`/category/${category.id}`}
-                className="cardLink flex flex-col bg-white rounded-lg"
-              >
-                <div className="relative aspect-square card shadow-xl">
-                  <div className="cardImg">
-                    <Image
-                      src={getCategoryImage(category)}
-                      alt={language === 'tr' ? category.name_tr : category.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 33vw"
-                      priority={true}
-                    />
-                  </div>
+          {!searchQuery && categories.map((category) => (
+            <Link
+              key={category.id}
+              href={`/category/${category.id}`}
+              className="cardLink flex flex-col bg-white rounded-lg"
+            >
+              <div className="relative aspect-square card shadow-xl">
+                <div className="cardImg">
+                  <Image
+                    src={getCategoryImage(category)}
+                    alt={language === 'tr' ? category.name_tr : category.name_en}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    priority={true}
+                  />
                 </div>
-                <div className="p-4 text-center bg-white cardTitle">
-                  <h3 className="text-lg font-light text-[#141414]">
-                    {language === 'tr' ? category.name_tr : category.name}
-                  </h3>
-                </div>
-              </Link>
-            )
-          })}
+              </div>
+              <div className="p-4 text-center bg-white cardTitle">
+                <h3 className="text-lg font-light text-[#141414]">
+                  {language === 'tr' ? category.name_tr : category.name_en}
+                </h3>
+              </div>
+            </Link>
+          ))}
         </div>
 
         {/* Search Results */}
         {searchQuery && (
-          <div className="mt-8 space-y-6 searchResults">
+          <div className="mt-8 space-y-6">
             {searchedItems.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                {language === 'tr' ? 'Aradığınız kriterlere uygun ürün bulunamadı' : 'No products found matching your criteria'}
+                {language === 'tr' ? 'Aradığınız ürün bulunamadı' : 'No items found matching your search'}
               </div>
             ) : (
-              <div className="space-y-6">
-                {searchedItems.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/menu-item/${item.id}`}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <h3 className="text-lg font-medium text-[#141414]">
-                          {language === 'tr' ? item.name_tr : item.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {language === 'tr' 
-                            ? categories.find(cat => cat.id === item.category_id)?.name_tr 
-                            : categories.find(cat => cat.id === item.category_id)?.name}
-                        </p>
-                        <p className="text-gray-600 text-sm mt-1">
-                          {language === 'tr' ? item.description_tr : item.description}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 rounded-full bg-[#2468A6] flex items-center justify-center shadow-lg">
-                        <p className="text-xl font-bold text-white">₺{item.price}</p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Category Menu Items */}
-        {selectedCategory && !searchQuery && (
-          <div className="mt-8 space-y-6">
-            {searchedItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center space-x-4">
-                  {item.image_url && (
+              searchedItems.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/menu-item/${item.id}`}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center space-x-4">
                     <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
                       <Image
-                        src={item.image_url}
-                        alt={language === 'tr' ? item.name_tr : item.name}
+                        src={item.image_url || '/images/default-photo.jpeg'}
+                        alt={language === 'tr' ? item.name_tr : item.name_en}
                         fill
                         className="object-cover"
                       />
                     </div>
-                  )}
-                  <div>
-                    <h3 className="text-lg font-medium text-[#141414]">
-                      {language === 'tr' ? item.name_tr : item.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm mt-1">
-                      {language === 'tr' ? item.description_tr : item.description}
-                    </p>
+                    <div>
+                      <h3 className="text-lg font-medium text-[#141414]">
+                        {language === 'tr' ? item.name_tr : item.name_en}
+                      </h3>
+                      <p className="text-gray-600 text-sm mt-1">
+                        {language === 'tr' ? item.description_tr : item.description_en}
+                      </p>
+                      <p className="text-[#2666AE] font-bold mt-2">₺{item.price}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex-shrink-0">
-                  <div className="w-16 h-16 rounded-full bg-[#2468A6] flex items-center justify-center shadow-lg">
-                    <p className="text-xl font-bold text-white">₺{item.price}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+                </Link>
+              ))
+            )}
           </div>
         )}
       </main>
@@ -306,5 +251,9 @@ function getCategoryImage(category: Category): string {
     'Logo': '/images/eagle-nest-logo.png',
   }
 
-  return defaultImages[category.name] || '/images/default-category.jpg'
+  return defaultImages[category.name_en] || '/images/default-category.jpg'
+}
+
+function createSlug(name: string, id: number): string {
+  return `${name.toLowerCase().replace(/\s+/g, '-')}-${id}`
 } 

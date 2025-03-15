@@ -4,38 +4,42 @@ import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useLanguage } from '../../context/LanguageContext'
 import LanguageToggle from '../../components/LanguageToggle'
+import { useLanguage } from '../../context/LanguageContext'
 
 interface Category {
   id: number
-  name: string
+  name_en: string
   name_tr: string
   image_url?: string
 }
 
 // ID'yi slug'dan çıkar
 const getCategoryId = (slug: string): string => {
-  const parts = slug.split('-');
-  return parts[parts.length - 1] || '';
+  const id = slug.split('-').pop();
+  console.log('Extracted category ID:', id);
+  return id || '';
 };
 
 interface Subcategory {
   id: number
-  name: string
+  name_en: string
   name_tr: string
   category_id: number
   order: number
   image_url: string | null
-  description?: string
+  description_en?: string
+  description_tr?: string
 }
 
 interface MenuItem {
   id: number
-  name: string
+  name_en: string
   name_tr: string
-  description: string
+  description_en: string
   description_tr: string
+  allergens_en?: string
+  allergens_tr?: string
   price: number
   category_id: number
   subcategory_id: number | null
@@ -52,61 +56,107 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
 
   const supabase = createClientComponentClient()
 
+  // Dil değişikliğinde yeniden render için key oluştur
+  const renderKey = `${language}-${selectedSubcategory}-${params.id}`
+
   useEffect(() => {
+    setLoading(true); // Her veri çekme işlemi başladığında loading'i true yap
+    const init = async () => {
+      try {
+        const categoryId = getCategoryId(params.id);
+        console.log('Fetching data for category ID:', categoryId);
+        console.log('Current language:', language);
+
+        // Fetch category details
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('categories')
+          .select('id, name_en, name_tr, image_url')
+          .eq('id', categoryId)
+          .single()
+
+        if (categoryError) {
+          console.error('Error fetching category:', categoryError);
+          return;
+        }
+
+        // Fetch subcategories
+        const { data: subcategoriesData, error: subcategoriesError } = await supabase
+          .from('subcategories')
+          .select('id, name_en, name_tr, category_id, order, image_url, description_en, description_tr')
+          .eq('category_id', categoryId)
+          .order('order')
+
+        if (subcategoriesError) {
+          console.error('Error fetching subcategories:', subcategoriesError);
+          return;
+        }
+
+        // Fetch menu items
+        const { data: menuItemsData, error: menuItemsError } = await supabase
+          .from('menu_items')
+          .select(`
+            id,
+            name_en,
+            name_tr,
+            description_en,
+            description_tr,
+            price,
+            category_id,
+            subcategory_id,
+            image_url,
+            allergens_en,
+            allergens_tr
+          `)
+          .eq('category_id', categoryId)
+          .order(language === 'tr' ? 'name_tr' : 'name_en')
+
+        if (menuItemsError) {
+          console.error('Error fetching menu items:', menuItemsError);
+          return;
+        }
+
+        if (categoryData) {
+          console.log('Category data:', categoryData);
+          setCategory(categoryData);
+        }
+        if (subcategoriesData) {
+          console.log('Subcategories data:', subcategoriesData);
+          setSubcategories(subcategoriesData);
+        }
+        if (menuItemsData) {
+          console.log('Menu items data:', menuItemsData);
+          setMenuItems(menuItemsData);
+        }
+      } catch (error) {
+        console.error('Error in fetchData:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     // Check URL parameters for subcategory
-    const urlParams = new URLSearchParams(window.location.search);
-    const subcategoryParam = urlParams.get('subcategory');
-    
-    if (subcategoryParam) {
-      setSelectedSubcategory(Number(subcategoryParam));
-      sessionStorage.setItem('lastCategoryView', subcategoryParam);
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const subcategoryParam = urlParams.get('subcategory');
+      
+      if (subcategoryParam) {
+        console.log('Setting subcategory from URL:', subcategoryParam);
+        setSelectedSubcategory(Number(subcategoryParam));
+      }
     }
 
-    fetchData();
-  }, [params.id]);
-
-  const fetchData = async () => {
-    try {
-      // Fetch category details
-      const { data: categoryData } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('id', getCategoryId(params.id))
-        .single()
-
-      // Fetch subcategories
-      const { data: subcategoriesData } = await supabase
-        .from('subcategories')
-        .select('*')
-        .eq('category_id', getCategoryId(params.id))
-        .order('order')
-
-      // Fetch menu items
-      const { data: menuItemsData } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('category_id', getCategoryId(params.id))
-        .order(language === 'tr' ? 'name_tr' : 'name')
-
-      if (categoryData) setCategory(categoryData)
-      if (subcategoriesData) setSubcategories(subcategoriesData)
-      if (menuItemsData) setMenuItems(menuItemsData)
-      setLoading(false)
-    } catch (error) {
-      console.error('Error fetching data:', error)
-      setLoading(false)
-    }
-  }
+    init();
+  }, [params.id, language, supabase]);
 
   const handleSubcategoryClick = (subcategoryId: number) => {
-    // Store the current URL path for back navigation
-    sessionStorage.setItem('lastCategoryView', `${subcategoryId}`);
+    console.log('Selected subcategory:', subcategoryId);
     setSelectedSubcategory(subcategoryId);
+    
+    // URL'i güncelle
+    const url = new URL(window.location.href);
+    url.searchParams.set('subcategory', subcategoryId.toString());
+    window.history.pushState({}, '', url.toString());
   };
-
-  const filteredMenuItems = selectedSubcategory
-    ? menuItems.filter(item => item.subcategory_id === selectedSubcategory)
-    : menuItems
 
   if (loading) {
     return (
@@ -117,7 +167,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div key={renderKey} className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 bg-white border-b z-50">
         <div className="max-w-2xl mx-auto px-4 py-4">
@@ -140,7 +190,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                 </Link>
               )}
               <div className="flex items-center space-x-2 catTitle">
-                <span className="subTitle">{language === 'tr' ? category?.name_tr : category?.name}</span>
+                <span className="subTitle">{language === 'tr' ? category?.name_tr : category?.name_en}</span>
                 {selectedSubcategory && (
                   <>
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,15 +199,12 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                     <span className="text-xl selectedSubCat">
                       {language === 'tr' 
                         ? subcategories.find(s => s.id === selectedSubcategory)?.name_tr 
-                        : subcategories.find(s => s.id === selectedSubcategory)?.name}
+                        : subcategories.find(s => s.id === selectedSubcategory)?.name_en}
                     </span>
                   </>
                 )}
               </div>
-              <div className="flex items-center space-x-4">
-              
-                <LanguageToggle />
-              </div>
+              <LanguageToggle />
             </div>
           </div>
         </div>
@@ -170,14 +217,14 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
             {subcategories.map((subcategory) => (
               <button
                 key={subcategory.id}
-                onClick={() => setSelectedSubcategory(subcategory.id)}
+                onClick={() => handleSubcategoryClick(subcategory.id)}
                 className="cardLink flex flex-col bg-white rounded-lg"
               >
                 <div className="relative aspect-square card shadow-xl cardWrapper">
                   <div className="cardImg">
                     <Image
                       src={subcategory.image_url || '/images/default-photo.jpeg'}
-                      alt={language === 'tr' ? subcategory.name_tr : subcategory.name}
+                      alt={language === 'tr' ? subcategory.name_tr : subcategory.name_en}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 50vw, 33vw"
@@ -185,7 +232,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                     />
                   </div>
                   
-                  <h3 className="item">{language === 'tr' ? subcategory.name_tr : subcategory.name}</h3>
+                  <h3 className="item">{language === 'tr' ? subcategory.name_tr : subcategory.name_en}</h3>
                   
                 </div>
               </button>
@@ -194,12 +241,18 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
         ) : (
           <div>
             <div className="subCatItems space-y-6">
-              {filteredMenuItems.length === 0 ? (
+              {(selectedSubcategory ? 
+                menuItems.filter(item => item.subcategory_id === selectedSubcategory) :
+                menuItems.filter(item => !item.subcategory_id)
+              ).length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   {language === 'tr' ? 'Bu kategoride henüz ürün bulunmuyor' : 'No items in this category yet'}
                 </div>
               ) : (
-                filteredMenuItems.map((item) => (
+                (selectedSubcategory ? 
+                  menuItems.filter(item => item.subcategory_id === selectedSubcategory) :
+                  menuItems.filter(item => !item.subcategory_id)
+                ).map((item) => (
                   <Link
                     key={item.id}
                     href={`/menu-item/${item.id}`}
@@ -208,10 +261,10 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                     <div className="mainItem flex items-center space-x-4">
                       <div>
                         <h3 className="itemNameWrapper">
-                          <span className="itemName">{language === 'tr' ? item.name_tr : item.name}</span>
+                          <span className="itemName">{language === 'tr' ? item.name_tr : item.name_en}</span>
                           <span className="itemPrice">₺{item.price}</span>
                         </h3>
-                        <p className="itemDesc">{language === 'tr' ? item.description_tr : item.description}</p>
+                        <p className="itemDesc">{language === 'tr' ? item.description_tr : item.description_en}</p>
                       </div>
                     </div>
                   </Link>
