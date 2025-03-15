@@ -42,16 +42,18 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
   const [menuItem, setMenuItem] = useState<MenuItem | null>(null)
   const [similarItems, setSimilarItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [lastCategoryView, setLastCategoryView] = useState<string | null>(null)
+  const [navigationInfo, setNavigationInfo] = useState<any>(null)
   const router = useRouter()
 
   const supabase = createClientComponentClient()
 
   useEffect(() => {
+    // Get navigation info from session storage
+    const storedInfo = sessionStorage.getItem('navigationInfo');
+    if (storedInfo) {
+      setNavigationInfo(JSON.parse(storedInfo));
+    }
     fetchData()
-    // Get the last category view from session storage
-    const storedView = sessionStorage.getItem('lastCategoryView');
-    setLastCategoryView(storedView);
   }, [params.id, language])
 
   const fetchData = async () => {
@@ -183,7 +185,13 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
           <div className="flex justify-between items-center">
             <button 
               onClick={() => {
-                if (menuItem) {
+                if (navigationInfo) {
+                  const url = navigationInfo.subcategoryId 
+                    ? `/category/${navigationInfo.categoryId}?subcategory=${navigationInfo.subcategoryId}`
+                    : `/category/${navigationInfo.categoryId}`;
+                  router.push(url);
+                } else if (menuItem) {
+                  // Fallback to menuItem data if navigationInfo is not available
                   if (menuItem.subcategory_id) {
                     router.push(`/category/${menuItem.category_id}?subcategory=${menuItem.subcategory_id}`);
                   } else {
@@ -196,19 +204,26 @@ export default function MenuItemPage({ params }: { params: { id: string } }) {
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              <span className="subTitle">
-                {language === 'tr' ? menuItem?.category?.name_tr : menuItem?.category?.name_en}
-                {menuItem?.subcategory && (
+              <span className="text-sm font-medium">
+                {
+                  navigationInfo 
+                    ? (language === 'tr' ? navigationInfo.categoryName_tr : navigationInfo.categoryName_en)
+                    : (language === 'tr' ? menuItem?.category?.name_tr : menuItem?.category?.name_en)
+                }
+                {(navigationInfo?.subcategoryId || menuItem?.subcategory) && (
                   <>
-                    <svg className="w-4 h-4 text-gray-400 inline-block mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400 inline-block mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                     </svg>
-                    {language === 'tr' ? menuItem.subcategory.name_tr : menuItem.subcategory.name_en}
+                    {navigationInfo 
+                      ? (language === 'tr' ? navigationInfo.subcategoryName_tr : navigationInfo.subcategoryName_en)
+                      : (language === 'tr' ? menuItem?.subcategory?.name_tr : menuItem?.subcategory?.name_en)
+                    }
                   </>
                 )}
               </span>
             </button>
-            <div className="w-6"></div>
+            <LanguageToggle />
           </div>
         </div>
       </header>

@@ -256,6 +256,20 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
                   <Link
                     key={item.id}
                     href={`/menu-item/${item.id}`}
+                    onClick={() => {
+                      // Kategori ve alt kategori bilgisini kaydet
+                      const navigationInfo = {
+                        categoryId: category?.id,
+                        categoryName_tr: category?.name_tr,
+                        categoryName_en: category?.name_en,
+                        subcategoryId: selectedSubcategory,
+                        subcategoryName_tr: selectedSubcategory ? 
+                          subcategories.find(s => s.id === selectedSubcategory)?.name_tr : null,
+                        subcategoryName_en: selectedSubcategory ? 
+                          subcategories.find(s => s.id === selectedSubcategory)?.name_en : null
+                      };
+                      sessionStorage.setItem('navigationInfo', JSON.stringify(navigationInfo));
+                    }}
                     className="itemBox flex items-center justify-between p-4 rounded-lg shadow-lg"
                   >
                     <div className="mainItem flex items-center space-x-4">

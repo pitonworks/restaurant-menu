@@ -10,7 +10,7 @@ export default function LanguageToggle() {
       onClick={() => setLanguage(language === 'tr' ? 'en' : 'tr')}
       className="px-2 py-1 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
     >
-      {language === 'tr' ? 'EN' : 'TR'}
+      {language === 'tr' ? 'TR' : 'EN'}
     </button>
   )
 } 
