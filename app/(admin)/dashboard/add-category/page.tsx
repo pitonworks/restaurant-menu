@@ -6,15 +6,21 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useDropzone } from 'react-dropzone'
 import Image from 'next/image'
+import { useLanguage } from '../../../context/LanguageContext'
+import AdminHeader from '../../../components/AdminHeader'
 
 interface Subcategory {
-  name: string
-  image_url?: string
-  description?: string
+  name_tr: string
+  name_en: string
+  image_url: string
+  description_tr: string
+  description_en: string
 }
 
 export default function AddCategoryPage() {
-  const [name, setName] = useState('')
+  const { language } = useLanguage()
+  const [name_tr, setNameTr] = useState('')
+  const [name_en, setNameEn] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -132,9 +138,11 @@ export default function AddCategoryPage() {
 
   const addSubcategory = () => {
     setSubcategories([...subcategories, { 
-      name: '',
+      name_tr: '',
+      name_en: '',
       image_url: '',
-      description: ''
+      description_tr: '',
+      description_en: ''
     }])
   }
 
@@ -173,7 +181,8 @@ export default function AddCategoryPage() {
         .from('categories')
         .insert([
           {
-            name,
+            name_tr,
+            name_en,
             image_url: finalImageUrl,
           },
         ])
@@ -185,11 +194,15 @@ export default function AddCategoryPage() {
       // Alt kategorileri ekle
       if (subcategories.length > 0 && categoryData) {
         const subcategoryInserts = subcategories
-          .filter(sub => sub.name.trim() !== '')
+          .filter(sub => sub.name_tr.trim() !== '' || sub.name_en.trim() !== '')
           .map((sub, index) => ({
-            name: sub.name,
+            name_tr: sub.name_tr,
+            name_en: sub.name_en,
             category_id: categoryData.id,
-            order: index
+            order: index,
+            description_tr: sub.description_tr || null,
+            description_en: sub.description_en || null,
+            image_url: sub.image_url || null
           }))
 
         if (subcategoryInserts.length > 0) {
@@ -213,185 +226,136 @@ export default function AddCategoryPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#141414]">Yeni Kategori Ekle</h1>
-          <Link
-            href="/dashboard"
-            className="text-[#141414] hover:text-gray-900"
-          >
-            Geri Dön
-          </Link>
-        </div>
+        <AdminHeader 
+          title={{
+            tr: 'Yeni Kategori Ekle',
+            en: 'Add New Category'
+          }}
+        />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
           <div className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-[#141414]">
-                Kategori Adı
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="Kategori adını girin"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="name_tr" className="block text-sm font-medium text-[#141414]">
+                  {language === 'tr' ? 'Kategori Adı (Türkçe)' : 'Category Name (Turkish)'}
+                </label>
+                <input
+                  type="text"
+                  id="name_tr"
+                  value={name_tr}
+                  onChange={(e) => setNameTr(e.target.value)}
+                  required
+                  placeholder={language === 'tr' ? 'Türkçe kategori adını girin' : 'Enter category name in Turkish'}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="name_en" className="block text-sm font-medium text-[#141414]">
+                  {language === 'tr' ? 'Kategori Adı (İngilizce)' : 'Category Name (English)'}
+                </label>
+                <input
+                  type="text"
+                  id="name_en"
+                  value={name_en}
+                  onChange={(e) => setNameEn(e.target.value)}
+                  required
+                  placeholder={language === 'tr' ? 'İngilizce kategori adını girin' : 'Enter category name in English'}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                />
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[#141414] mb-2">
-                Kategori Görseli
+                {language === 'tr' ? 'Kategori Görseli' : 'Category Image'}
               </label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragActive ? 'border-[#141414] bg-gray-50' : 'border-gray-300 hover:border-[#141414]'
-                }`}
+                className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors
+                  ${isDragActive ? 'border-[#141414] bg-gray-50' : 'border-gray-300 hover:border-[#141414]'}`}
               >
                 <input {...getInputProps()} />
                 {uploadedImage ? (
-                  <div className="text-[#141414]">
-                    <p>Seçilen dosya: {uploadedImage.name}</p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setUploadedImage(null)
-                      }}
-                      className="text-red-600 hover:text-red-800 mt-2"
-                    >
-                      Görseli Kaldır
-                    </button>
-                  </div>
-                ) : imageUrl ? (
-                  <div className="relative w-full aspect-video">
-                    <Image
-                      src={imageUrl}
-                      alt={name}
-                      fill
-                      className="object-cover rounded-lg"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setImageUrl('')}
-                      className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
+                  <p className="text-sm text-gray-600">
+                    {language === 'tr' ? 'Seçilen dosya: ' : 'Selected file: '}{uploadedImage.name}
+                  </p>
                 ) : (
-                  <div className="text-gray-600">
-                    <p>Görsel yüklemek için tıklayın veya sürükleyip bırakın</p>
-                    <p className="text-sm mt-1">PNG, JPG, GIF (max. 10MB)</p>
-                  </div>
+                  <p className="text-sm text-gray-600">
+                    {language === 'tr' 
+                      ? 'Görseli buraya sürükleyin veya seçmek için tıklayın' 
+                      : 'Drag and drop an image here, or click to select'}
+                  </p>
                 )}
               </div>
-              {!uploadedImage && !imageUrl && (
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="veya görsel URL'si girin"
-                  className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-                />
-              )}
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-4">
                 <label className="block text-sm font-medium text-[#141414]">
-                  Alt Kategoriler
+                  {language === 'tr' ? 'Alt Kategoriler' : 'Subcategories'}
                 </label>
                 <button
                   type="button"
                   onClick={addSubcategory}
                   className="text-sm bg-gray-100 text-gray-900 px-3 py-1 rounded-md hover:bg-gray-200"
                 >
-                  Alt Kategori Ekle
+                  {language === 'tr' ? 'Alt Kategori Ekle' : 'Add Subcategory'}
                 </button>
               </div>
               <div className="space-y-6">
                 {subcategories.map((subcategory, index) => (
                   <div key={index} className="bg-gray-50 rounded-lg p-4">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <input
-                          type="text"
-                          value={subcategory.name}
-                          onChange={(e) => updateSubcategory(index, { name: e.target.value })}
-                          placeholder="Alt kategori adı"
-                          className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeSubcategory(index)}
-                          className="ml-2 text-red-600 hover:text-red-800"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <input
+                            type="text"
+                            value={subcategory.name_tr}
+                            onChange={(e) => updateSubcategory(index, { name_tr: e.target.value })}
+                            placeholder={language === 'tr' ? 'Alt kategori adı (Türkçe)' : 'Subcategory name (Turkish)'}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={subcategory.name_en}
+                            onChange={(e) => updateSubcategory(index, { name_en: e.target.value })}
+                            placeholder={language === 'tr' ? 'Alt kategori adı (İngilizce)' : 'Subcategory name (English)'}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeSubcategory(index)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Açıklama
-                        </label>
-                        <textarea
-                          value={subcategory.description || ''}
-                          onChange={(e) => updateSubcategory(index, { description: e.target.value })}
-                          rows={2}
-                          placeholder="Alt kategori açıklaması"
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Görsel
-                        </label>
-                        <div className="flex items-center space-x-4">
-                          {subcategory.image_url && (
-                            <div className="relative w-20 h-20">
-                              <Image
-                                src={subcategory.image_url}
-                                alt={subcategory.name}
-                                fill
-                                className="object-cover rounded-lg"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => updateSubcategory(index, { image_url: '' })}
-                                className="absolute -top-1 -right-1 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 shadow-lg"
-                              >
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0]
-                                if (file) {
-                                  try {
-                                    const url = await uploadSubcategoryImage(file)
-                                    updateSubcategory(index, { image_url: url })
-                                  } catch (error: any) {
-                                    setError(error.message)
-                                  }
-                                }
-                              }}
-                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-                            />
-                          </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <textarea
+                            value={subcategory.description_tr}
+                            onChange={(e) => updateSubcategory(index, { description_tr: e.target.value })}
+                            rows={2}
+                            placeholder={language === 'tr' ? 'Alt kategori açıklaması (Türkçe)' : 'Subcategory description (Turkish)'}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                          />
+                        </div>
+                        <div>
+                          <textarea
+                            value={subcategory.description_en}
+                            onChange={(e) => updateSubcategory(index, { description_en: e.target.value })}
+                            rows={2}
+                            placeholder={language === 'tr' ? 'Alt kategori açıklaması (İngilizce)' : 'Subcategory description (English)'}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                          />
                         </div>
                       </div>
                     </div>
@@ -399,22 +363,28 @@ export default function AddCategoryPage() {
                 ))}
               </div>
             </div>
-          </div>
 
-          {error && (
-            <div className="mt-4 text-red-600 text-sm">
-              {error}
+            {error && (
+              <div className="text-red-600 text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className={`px-4 py-2 text-white rounded-md ${
+                  loading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-[#141414] hover:bg-black'
+                }`}
+              >
+                {loading 
+                  ? (language === 'tr' ? 'Kaydediliyor...' : 'Saving...') 
+                  : (language === 'tr' ? 'Kategori Ekle' : 'Add Category')}
+              </button>
             </div>
-          )}
-
-          <div className="mt-6">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#141414] text-white py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#141414] disabled:opacity-50"
-            >
-              {loading ? 'Ekleniyor...' : 'Kategori Ekle'}
-            </button>
           </div>
         </form>
       </div>

@@ -6,31 +6,39 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useDropzone } from 'react-dropzone'
+import { useLanguage } from '../../../../context/LanguageContext'
+import AdminHeader from '../../../../components/AdminHeader'
 
 interface Category {
   id: number
-  name: string
+  name_tr: string
+  name_en: string
   image_url: string
   order: number
 }
 
 interface Subcategory {
   id: number
-  name: string
+  name_tr: string
+  name_en: string
   category_id: number
   order: number
   image_url?: string
-  description?: string
+  description_tr?: string
+  description_en?: string
 }
 
 export default function EditCategoryPage({ params }: { params: { id: string } }) {
-  const [name, setName] = useState('')
+  const { language } = useLanguage()
+  const [name_tr, setNameTr] = useState('')
+  const [name_en, setNameEn] = useState('')
   const [order, setOrder] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [expandedSubcategories, setExpandedSubcategories] = useState(false)
 
   const router = useRouter()
   const supabase = createClientComponentClient()
@@ -72,7 +80,8 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       if (error) throw error
 
       if (category) {
-        setName(category.name)
+        setNameTr(category.name_tr || '')
+        setNameEn(category.name_en || '')
         setOrder(category.order || 0)
         setImageUrl(category.image_url || '')
       }
@@ -80,17 +89,18 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       setLoading(false)
     } catch (error) {
       console.error('Error fetching category:', error)
-      setError('Kategori bilgileri yüklenirken bir hata oluştu')
+      setError(language === 'tr' ? 'Kategori bilgileri yüklenirken bir hata oluştu' : 'Error loading category information')
       setLoading(false)
     }
   }
 
   const fetchSubcategories = async () => {
     try {
+      const categoryId = getCategoryId(params.id)
       const { data, error } = await supabase
         .from('subcategories')
         .select('*')
-        .eq('category_id', params.id)
+        .eq('category_id', categoryId)
         .order('order')
 
       if (error) throw error
@@ -197,11 +207,13 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
   const addSubcategory = () => {
     setSubcategories([...subcategories, { 
       id: -Date.now(), // Negative ID for new subcategories
-      name: '',
+      name_tr: '',
+      name_en: '',
       category_id: parseInt(params.id),
       order: subcategories.length,
       image_url: '',
-      description: ''
+      description_tr: '',
+      description_en: ''
     }])
   }
 
@@ -256,55 +268,22 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
       const categoryId = getCategoryId(params.id)
 
-      // Kategoriyi güncelle
-      const { error: categoryError } = await supabase
+      const { error: updateError } = await supabase
         .from('categories')
         .update({
-          name,
+          name_tr,
+          name_en,
           order,
           image_url: finalImageUrl,
         })
         .eq('id', categoryId)
 
-      if (categoryError) throw categoryError
-
-      // Alt kategorileri güncelle
-      for (const subcategory of subcategories) {
-        if (!subcategory.name.trim()) continue
-
-        if (subcategory.id > 0) {
-          // Mevcut alt kategoriyi güncelle
-          const { error } = await supabase
-            .from('subcategories')
-            .update({
-              name: subcategory.name,
-              order: subcategory.order,
-              description: subcategory.description || null,
-              image_url: subcategory.image_url || null
-            })
-            .eq('id', subcategory.id)
-
-          if (error) throw error
-        } else {
-          // Yeni alt kategori ekle (negatif ID'ye sahip olanlar)
-          const { error } = await supabase
-            .from('subcategories')
-            .insert({
-              name: subcategory.name,
-              category_id: parseInt(categoryId),
-              order: subcategory.order,
-              description: subcategory.description || null,
-              image_url: subcategory.image_url || null
-            })
-
-          if (error) throw error
-        }
-      }
+      if (updateError) throw updateError
 
       router.push('/dashboard')
     } catch (error: any) {
-      console.error('Error in handleSubmit:', error)
-      setError(error.message || 'Kategori güncellenirken bir hata oluştu')
+      console.error('Error:', error)
+      setError(language === 'tr' ? 'Kategori güncellenirken bir hata oluştu' : 'Error updating category')
     } finally {
       setLoading(false)
     }
@@ -313,7 +292,9 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-2xl">Yükleniyor...</div>
+        <div className="text-2xl">
+          {language === 'tr' ? 'Yükleniyor...' : 'Loading...'}
+        </div>
       </div>
     )
   }
@@ -321,83 +302,75 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto px-4">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#141414]">Kategori Düzenle</h1>
-          <Link
-            href="/dashboard"
-            className="text-[#141414] hover:text-gray-900"
-          >
-            Geri Dön
-          </Link>
-        </div>
+        <AdminHeader 
+          title={{
+            tr: 'Kategori Düzenle',
+            en: 'Edit Category'
+          }}
+        />
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
           <div className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-bold text-[#141414]">
-                Kategori Adı
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="Kategori adını girin"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="name_tr" className="block text-sm font-medium text-[#141414]">
+                  {language === 'tr' ? 'Kategori Adı (Türkçe)' : 'Category Name (Turkish)'}
+                </label>
+                <input
+                  type="text"
+                  id="name_tr"
+                  value={name_tr}
+                  onChange={(e) => setNameTr(e.target.value)}
+                  required
+                  placeholder={language === 'tr' ? 'Türkçe kategori adını girin' : 'Enter category name in Turkish'}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="name_en" className="block text-sm font-medium text-[#141414]">
+                  {language === 'tr' ? 'Kategori Adı (İngilizce)' : 'Category Name (English)'}
+                </label>
+                <input
+                  type="text"
+                  id="name_en"
+                  value={name_en}
+                  onChange={(e) => setNameEn(e.target.value)}
+                  required
+                  placeholder={language === 'tr' ? 'İngilizce kategori adını girin' : 'Enter category name in English'}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="order" className="block text-sm font-bold text-[#141414]">
-                Sıralama
-              </label>
-              <input
-                type="number"
-                id="order"
-                value={order}
-                onChange={(e) => setOrder(parseInt(e.target.value))}
-                min="0"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-[#141414] mb-2">
-                Kategori Görseli
+              <label className="block text-sm font-medium text-[#141414] mb-2">
+                {language === 'tr' ? 'Kategori Görseli' : 'Category Image'}
               </label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragActive ? 'border-[#141414] bg-gray-50' : 'border-gray-300 hover:border-[#141414]'
-                }`}
+                className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors
+                  ${isDragActive ? 'border-[#141414] bg-gray-50' : 'border-gray-300 hover:border-[#141414]'}`}
               >
                 <input {...getInputProps()} />
                 {uploadedImage ? (
-                  <div className="text-[#141414]">
-                    <p>Seçilen dosya: {uploadedImage.name}</p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setUploadedImage(null)
-                      }}
-                      className="text-red-600 hover:text-red-800 mt-2"
-                    >
-                      Görseli Kaldır
-                    </button>
-                  </div>
+                  <p className="text-sm text-gray-600">
+                    {language === 'tr' ? 'Seçilen dosya: ' : 'Selected file: '}{uploadedImage.name}
+                  </p>
                 ) : imageUrl ? (
                   <div className="relative w-full aspect-video">
                     <Image
                       src={imageUrl}
-                      alt={name}
+                      alt={language === 'tr' ? name_tr : name_en}
                       fill
-                      className="object-cover rounded-lg"
+                      className="object-contain rounded-lg"
                     />
                     <button
                       type="button"
-                      onClick={() => setImageUrl('')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setImageUrl('');
+                      }}
                       className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,137 +379,81 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
                     </button>
                   </div>
                 ) : (
-                  <div className="text-gray-600">
-                    <p>Görsel yüklemek için tıklayın veya sürükleyip bırakın</p>
-                    <p className="text-sm mt-1">PNG, JPG, GIF (max. 10MB)</p>
-                  </div>
+                  <p className="text-sm text-gray-600">
+                    {language === 'tr' 
+                      ? 'Görseli buraya sürükleyin veya seçmek için tıklayın' 
+                      : 'Drag and drop an image here, or click to select'}
+                  </p>
                 )}
               </div>
-              {!uploadedImage && !imageUrl && (
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="veya görsel URL'si girin"
-                  className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-                />
-              )}
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-4">
-                <label className="block text-sm font-bold text-[#141414]">
-                  Alt Kategoriler
-                </label>
-                <button
-                  type="button"
-                  onClick={addSubcategory}
-                  className="text-sm bg-gray-100 text-gray-900 px-3 py-1 rounded-md hover:bg-gray-200"
+              <button
+                type="button"
+                onClick={() => setExpandedSubcategories(!expandedSubcategories)}
+                className="flex items-center justify-between w-full px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                <span className="text-sm font-medium text-[#141414]">
+                  {language === 'tr' ? 'Alt Kategoriler' : 'Subcategories'} ({subcategories.length})
+                </span>
+                <svg
+                  className={`w-5 h-5 transition-transform text-[#141414] ${expandedSubcategories ? 'transform rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  Alt Kategori Ekle
-                </button>
-              </div>
-              <div className="space-y-6">
-                {subcategories.map((subcategory) => (
-                  <div key={subcategory.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="space-y-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {expandedSubcategories && (
+                <div className="mt-4 space-y-4">
+                  {subcategories.map((subcategory) => (
+                    <div key={subcategory.id} className="bg-gray-50 p-4 rounded-md border border-gray-200">
                       <div className="flex items-center justify-between">
-                        <input
-                          type="text"
-                          value={subcategory.name}
-                          onChange={(e) => updateSubcategory(subcategory, { name: e.target.value })}
-                          placeholder="Alt kategori adı"
-                          className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeSubcategory(subcategory)}
-                          className="ml-2 text-red-600 hover:text-red-800"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Açıklama
-                        </label>
-                        <textarea
-                          value={subcategory.description || ''}
-                          onChange={(e) => updateSubcategory(subcategory, { description: e.target.value })}
-                          rows={2}
-                          placeholder="Alt kategori açıklaması"
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] placeholder-gray-500 text-[#141414]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Görsel
-                        </label>
-                        <div className="flex items-center space-x-4">
-                          {subcategory.image_url && (
-                            <div className="relative w-20 h-20">
-                              <Image
-                                src={subcategory.image_url}
-                                alt={subcategory.name}
-                                fill
-                                className="object-cover rounded-lg"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => updateSubcategory(subcategory, { image_url: '' })}
-                                className="absolute -top-1 -right-1 bg-blue-600 text-white p-1 rounded-full hover:bg-blue-700 shadow-lg"
-                              >
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0]
-                                if (file) {
-                                  try {
-                                    const url = await uploadSubcategoryImage(file)
-                                    updateSubcategory(subcategory, { image_url: url })
-                                  } catch (error: any) {
-                                    setError(error.message)
-                                  }
-                                }
-                              }}
-                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 [&::-webkit-file-upload-button]:hidden [&::file-selector-button]:hidden before:content-['Görsel_seç'] before:mr-4 before:py-2 before:px-4 before:rounded-full before:border-0 before:text-sm before:font-semibold before:bg-gray-100 before:text-gray-700 hover:before:bg-gray-200 before:cursor-pointer"
-                            />
-                          </div>
+                        <div>
+                          <p className="font-medium text-[#141414]">
+                            {language === 'tr' ? subcategory.name_tr : subcategory.name_en}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {language === 'tr' ? subcategory.description_tr : subcategory.description_en}
+                          </p>
                         </div>
+                        <Link
+                          href={`/dashboard/edit-subcategory/${subcategory.id}`}
+                          className="text-[#141414] hover:text-gray-700"
+                        >
+                          {language === 'tr' ? 'Düzenle' : 'Edit'}
+                        </Link>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {error && (
+              <div className="text-red-600 text-sm">
+                {error}
               </div>
-            </div>
-          </div>
+            )}
 
-          {error && (
-            <div className="mt-4 text-red-600 text-sm">
-              {error}
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className={`px-4 py-2 text-white rounded-md ${
+                  loading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-[#141414] hover:bg-black'
+                }`}
+              >
+                {loading 
+                  ? (language === 'tr' ? 'Kaydediliyor...' : 'Saving...') 
+                  : (language === 'tr' ? 'Kategoriyi Güncelle' : 'Update Category')}
+              </button>
             </div>
-          )}
-
-          <div className="mt-6">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#141414] text-white py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#141414] disabled:opacity-50"
-            >
-              {loading ? 'Güncelleniyor...' : 'Kategoriyi Güncelle'}
-            </button>
           </div>
         </form>
       </div>

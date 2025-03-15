@@ -60,7 +60,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
   const renderKey = `${language}-${selectedSubcategory}-${params.id}`
 
   useEffect(() => {
-    setLoading(true); // Her veri çekme işlemi başladığında loading'i true yap
+    // Her veri çekme işlemi başladığında loading'i true yap
     const init = async () => {
       try {
         const categoryId = getCategoryId(params.id);
