@@ -1,6 +1,7 @@
 'use client'
 
 import { useLanguage } from '../context/LanguageContext'
+import Image from 'next/image'
 
 export default function LanguageToggle() {
   const { language, setLanguage } = useLanguage()
@@ -8,9 +9,14 @@ export default function LanguageToggle() {
   return (
     <button
       onClick={() => setLanguage(language === 'tr' ? 'en' : 'tr')}
-      className="px-2 py-1 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+      className="relative w-6 h-4 overflow-hidden rounded-sm hover:opacity-80 transition-opacity"
     >
-      {language === 'tr' ? 'TR' : 'EN'}
+      <Image
+        src={language === 'tr' ? '/images/tr-flag.svg' : '/images/gb-flag.svg'}
+        alt={language === 'tr' ? 'Türkçe' : 'English'}
+        fill
+        className="object-cover"
+      />
     </button>
   )
 } 
