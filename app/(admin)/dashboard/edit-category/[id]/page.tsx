@@ -39,6 +39,14 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
   const [uploadedImage, setUploadedImage] = useState<File | null>(null)
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [expandedSubcategories, setExpandedSubcategories] = useState(false)
+  const [newSubcategory, setNewSubcategory] = useState({
+    name_tr: '',
+    name_en: '',
+    description_tr: '',
+    description_en: '',
+    image: null
+  })
+  const [isAddingSubcategory, setIsAddingSubcategory] = useState(false)
 
   const router = useRouter()
   const supabase = createClientComponentClient()
@@ -57,6 +65,42 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif']
+    },
+    maxFiles: 1
+  })
+
+  const getSubcategoryRootProps = useDropzone({
+    onDrop: (acceptedFiles: File[]) => {
+      if (acceptedFiles.length > 0) {
+        setNewSubcategory({ ...newSubcategory, image: acceptedFiles[0] })
+      }
+    },
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif']
+    },
+    maxFiles: 1
+  }).getRootProps
+
+  const getSubcategoryInputProps = useDropzone({
+    onDrop: (acceptedFiles: File[]) => {
+      if (acceptedFiles.length > 0) {
+        setNewSubcategory({ ...newSubcategory, image: acceptedFiles[0] })
+      }
+    },
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif']
+    },
+    maxFiles: 1
+  }).getInputProps
+
+  const { isDragActive: isSubcategoryDragActive } = useDropzone({
+    onDrop: (acceptedFiles: File[]) => {
+      if (acceptedFiles.length > 0) {
+        setNewSubcategory({ ...newSubcategory, image: acceptedFiles[0] })
+      }
+    },
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.gif']
     },
@@ -252,7 +296,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
     setError('')
 
     try {
-      let finalImageUrl = imageUrl
+      let finalImageUrl = imageUrl || '/default-photo.jpeg' // Eğer imageUrl boşsa varsayılan görseli kullan
 
       if (uploadedImage) {
         try {
@@ -286,6 +330,52 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       setError(language === 'tr' ? 'Kategori güncellenirken bir hata oluştu' : 'Error updating category')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAddSubcategory = async () => {
+    setIsAddingSubcategory(true)
+    setError('')
+    try {
+      let imageUrl = '/default-photo.jpeg' // Varsayılan görsel
+
+      const newSubcategoryData = {
+        id: -Date.now(),
+        name_tr: 'Biralar',
+        name_en: 'Beers',
+        category_id: parseInt(getCategoryId(params.id)),
+        order: subcategories.length,
+        image_url: imageUrl,
+        description_tr: 'Yerli ve yabancı biralar',
+        description_en: 'Local and imported beers'
+      }
+
+      // Veritabanına kaydet
+      const { error: insertError } = await supabase
+        .from('subcategories')
+        .insert([newSubcategoryData])
+
+      if (insertError) {
+        console.error('Database insert error:', insertError)
+        throw insertError
+      }
+
+      setSubcategories([...subcategories, newSubcategoryData])
+      setNewSubcategory({
+        name_tr: '',
+        name_en: '',
+        description_tr: '',
+        description_en: '',
+        image: null
+      })
+
+      // Alt kategori oluşturulduktan sonra düzenleme sayfasına yönlendir
+      router.push(`/dashboard/edit-subcategory/${newSubcategoryData.id}`)
+    } catch (error: any) {
+      console.error('Error adding new subcategory:', error)
+      setError(language === 'tr' ? 'Alt kategori eklenirken bir hata oluştu: ' + error.message : 'Error adding subcategory: ' + error.message)
+    } finally {
+      setIsAddingSubcategory(false)
     }
   }
 
@@ -409,26 +499,132 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
               {expandedSubcategories && (
                 <div className="mt-4 space-y-4">
-                  {subcategories.map((subcategory) => (
-                    <div key={subcategory.id} className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                      <div className="flex items-center justify-between">
+                  <div className="bg-white p-4 rounded-md border border-gray-200">
+                    <h3 className="text-lg font-medium text-[#141414] mb-4">
+                      {language === 'tr' ? 'Yeni Alt Kategori Ekle' : 'Add New Subcategory'}
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                          <p className="font-medium text-[#141414]">
-                            {language === 'tr' ? subcategory.name_tr : subcategory.name_en}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {language === 'tr' ? subcategory.description_tr : subcategory.description_en}
-                          </p>
+                          <label htmlFor="new_subcategory_name_tr" className="block text-sm font-medium text-[#141414]">
+                            {language === 'tr' ? 'Alt Kategori Adı (Türkçe)' : 'Subcategory Name (Turkish)'}
+                          </label>
+                          <input
+                            type="text"
+                            id="new_subcategory_name_tr"
+                            value={newSubcategory.name_tr}
+                            onChange={(e) => setNewSubcategory({ ...newSubcategory, name_tr: e.target.value })}
+                            required
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
+                          />
                         </div>
-                        <Link
-                          href={`/dashboard/edit-subcategory/${subcategory.id}`}
-                          className="text-[#141414] hover:text-gray-700"
+                        <div>
+                          <label htmlFor="new_subcategory_name_en" className="block text-sm font-medium text-[#141414]">
+                            {language === 'tr' ? 'Alt Kategori Adı (İngilizce)' : 'Subcategory Name (English)'}
+                          </label>
+                          <input
+                            type="text"
+                            id="new_subcategory_name_en"
+                            value={newSubcategory.name_en}
+                            onChange={(e) => setNewSubcategory({ ...newSubcategory, name_en: e.target.value })}
+                            required
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <label htmlFor="new_subcategory_description_tr" className="block text-sm font-medium text-[#141414]">
+                            {language === 'tr' ? 'Açıklama (Türkçe)' : 'Description (Turkish)'}
+                          </label>
+                          <textarea
+                            id="new_subcategory_description_tr"
+                            value={newSubcategory.description_tr}
+                            onChange={(e) => setNewSubcategory({ ...newSubcategory, description_tr: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="new_subcategory_description_en" className="block text-sm font-medium text-[#141414]">
+                            {language === 'tr' ? 'Açıklama (İngilizce)' : 'Description (English)'}
+                          </label>
+                          <textarea
+                            id="new_subcategory_description_en"
+                            value={newSubcategory.description_en}
+                            onChange={(e) => setNewSubcategory({ ...newSubcategory, description_en: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#141414] focus:ring-[#141414] text-[#141414]"
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#141414] mb-2">
+                          {language === 'tr' ? 'Alt Kategori Görseli' : 'Subcategory Image'}
+                        </label>
+                        <div
+                          {...getSubcategoryRootProps()}
+                          className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors
+                            ${isSubcategoryDragActive ? 'border-[#141414] bg-gray-50' : 'border-gray-300 hover:border-[#141414]'}`}
                         >
-                          {language === 'tr' ? 'Düzenle' : 'Edit'}
-                        </Link>
+                          <input {...getSubcategoryInputProps()} />
+                          {newSubcategory.image ? (
+                            <p className="text-sm text-gray-600">
+                              {language === 'tr' ? 'Seçilen dosya: ' : 'Selected file: '}{newSubcategory.image.name}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-gray-600">
+                              {language === 'tr' 
+                                ? 'Görseli buraya sürükleyin veya seçmek için tıklayın' 
+                                : 'Drag and drop an image here, or click to select'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleAddSubcategory}
+                          disabled={isAddingSubcategory}
+                          className={`px-4 py-2 text-white rounded-md ${
+                            isAddingSubcategory 
+                              ? 'bg-gray-400 cursor-not-allowed' 
+                              : 'bg-[#141414] hover:bg-black'
+                          }`}
+                        >
+                          {isAddingSubcategory 
+                            ? (language === 'tr' ? 'Ekleniyor...' : 'Adding...') 
+                            : (language === 'tr' ? 'Alt Kategori Ekle' : 'Add Subcategory')}
+                        </button>
                       </div>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-lg font-medium text-[#141414] mb-4">
+                      {language === 'tr' ? 'Mevcut Alt Kategoriler' : 'Existing Subcategories'}
+                    </h3>
+                    {subcategories.map((subcategory) => (
+                      <div key={subcategory.id} className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-[#141414]">
+                              {language === 'tr' ? subcategory.name_tr : subcategory.name_en}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {language === 'tr' ? subcategory.description_tr : subcategory.description_en}
+                            </p>
+                          </div>
+                          <Link
+                            href={`/dashboard/edit-subcategory/${subcategory.id}`}
+                            className="text-[#141414] hover:text-gray-700"
+                          >
+                            {language === 'tr' ? 'Düzenle' : 'Edit'}
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

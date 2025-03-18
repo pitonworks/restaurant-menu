@@ -83,8 +83,8 @@ export default function HomePage() {
     ? filteredMenuItems.filter(item => {
         const name = language === 'tr' ? item.name_tr : item.name_en
         const description = language === 'tr' ? item.description_tr : item.description_en
-        return name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               description.toLowerCase().includes(searchQuery.toLowerCase())
+        return (name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+               (description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
       })
     : filteredMenuItems
 
