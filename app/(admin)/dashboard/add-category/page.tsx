@@ -209,8 +209,12 @@ export default function AddCategoryPage() {
           const { error: subcategoryError } = await supabase
             .from('subcategories')
             .insert(subcategoryInserts)
+            .select()
 
-          if (subcategoryError) throw subcategoryError
+          if (subcategoryError) {
+            console.error('Subcategory insert error:', subcategoryError)
+            throw subcategoryError
+          }
         }
       }
 
