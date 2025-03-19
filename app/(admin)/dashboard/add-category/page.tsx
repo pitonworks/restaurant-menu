@@ -189,7 +189,10 @@ export default function AddCategoryPage() {
         .select()
         .single()
 
-      if (categoryError) throw categoryError
+      if (categoryError) {
+        console.error('Category insert error:', categoryError)
+        throw categoryError
+      }
 
       // Alt kategorileri ekle
       if (subcategories.length > 0 && categoryData) {
@@ -197,11 +200,10 @@ export default function AddCategoryPage() {
           .filter(sub => sub.name_tr.trim() !== '' || sub.name_en.trim() !== '')
 
         if (validSubcategories.length > 0) {
-          // Alt kategorileri tek tek ekle
-          for (const sub of validSubcategories) {
-            const { error: subcategoryError } = await supabase
-              .from('subcategories')
-              .insert({
+          try {
+            // Alt kategorileri tek tek ekle
+            for (const sub of validSubcategories) {
+              const subcategoryData = {
                 name_tr: sub.name_tr,
                 name_en: sub.name_en,
                 category_id: categoryData.id,
@@ -209,12 +211,21 @@ export default function AddCategoryPage() {
                 description_tr: sub.description_tr || null,
                 description_en: sub.description_en || null,
                 image_url: sub.image_url || null
-              })
+              }
 
-            if (subcategoryError) {
-              console.error('Subcategory insert error:', subcategoryError)
-              throw subcategoryError
+              const { error: subcategoryError } = await supabase
+                .from('subcategories')
+                .insert(subcategoryData)
+
+              if (subcategoryError) {
+                console.error('Subcategory insert error:', subcategoryError)
+                // Alt kategori eklenirken hata olsa bile devam et
+                continue
+              }
             }
+          } catch (error) {
+            console.error('Error adding subcategories:', error)
+            // Alt kategoriler eklenirken hata olsa bile devam et
           }
         }
       }
