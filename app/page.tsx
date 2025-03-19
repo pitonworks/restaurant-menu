@@ -243,7 +243,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="p-4 text-center bg-white cardTitle">
-                <h3 className="text-lg font-light text-[#141414]">
+                <h3 className="text-lg font-light text-[#2566AE]">
                   {language === 'tr' ? category.name_tr : category.name_en}
                 </h3>
               </div>
