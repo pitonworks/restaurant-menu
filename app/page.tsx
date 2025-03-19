@@ -30,14 +30,25 @@ interface MenuItem {
 }
 
 export default function HomePage() {
-  const { language } = useLanguage()
+  const { language, setLanguage } = useLanguage()
   const [categories, setCategories] = useState<Category[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showLanguageModal, setShowLanguageModal] = useState(true)
 
   const supabase = createClientComponentClient()
+
+  useEffect(() => {
+    // Sayfa yüklendiğinde dil seçim modalını göster
+    setShowLanguageModal(true)
+  }, [])
+
+  const handleLanguageSelect = (selectedLang: 'tr' | 'en') => {
+    setLanguage(selectedLang)
+    setShowLanguageModal(false)
+  }
 
   const fetchData = async () => {
     try {
@@ -98,6 +109,31 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Dil Seçim Modalı */}
+      {showLanguageModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-semibold text-center mb-6 text-[#141414]">
+              {language === 'tr' ? 'Dil Seçimi' : 'Language Selection'}
+            </h2>
+            <div className="flex flex-col space-y-4">
+              <button
+                onClick={() => handleLanguageSelect('tr')}
+                className="w-full py-3 px-4 bg-[#141414] text-white rounded-md hover:bg-black transition-colors"
+              >
+                Türkçe
+              </button>
+              <button
+                onClick={() => handleLanguageSelect('en')}
+                className="w-full py-3 px-4 bg-[#141414] text-white rounded-md hover:bg-black transition-colors"
+              >
+                English
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="top-0 bg-white border-b z-50">
         <div className="max-w-4xl mx-auto px-8 py-4">
