@@ -36,17 +36,23 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showLanguageModal, setShowLanguageModal] = useState(true)
+  const [showLanguageModal, setShowLanguageModal] = useState(false)
 
   const supabase = createClientComponentClient()
 
   useEffect(() => {
-    // Sayfa yüklendiğinde dil seçim modalını göster
-    setShowLanguageModal(true)
+    // Sayfa yüklendiğinde localStorage'dan dil seçimini kontrol et
+    const savedLanguage = localStorage.getItem('selectedLanguage')
+    if (!savedLanguage) {
+      setShowLanguageModal(true)
+    } else {
+      setLanguage(savedLanguage as 'tr' | 'en')
+    }
   }, [])
 
   const handleLanguageSelect = (selectedLang: 'tr' | 'en') => {
     setLanguage(selectedLang)
+    localStorage.setItem('selectedLanguage', selectedLang)
     setShowLanguageModal(false)
   }
 
@@ -111,21 +117,21 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       {/* Dil Seçim Modalı */}
       {showLanguageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all">
             <h2 className="text-2xl font-semibold text-center mb-6 text-[#141414]">
               {language === 'tr' ? 'Dil Seçimi' : 'Language Selection'}
             </h2>
             <div className="flex flex-col space-y-4">
               <button
                 onClick={() => handleLanguageSelect('tr')}
-                className="w-full py-3 px-4 bg-[#2665AF] text-white rounded-md hover:bg-black transition-colors"
+                className="w-full py-3 px-4 bg-[#2665AF] text-white rounded-md hover:bg-[#1a4a8a] transition-colors duration-200"
               >
                 Türkçe
               </button>
               <button
                 onClick={() => handleLanguageSelect('en')}
-                className="w-full py-3 px-4 bg-[#2665AF] text-white rounded-md hover:bg-black transition-colors"
+                className="w-full py-3 px-4 bg-[#2665AF] text-white rounded-md hover:bg-[#1a4a8a] transition-colors duration-200"
               >
                 English
               </button>
