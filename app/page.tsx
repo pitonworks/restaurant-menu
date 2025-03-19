@@ -119,13 +119,13 @@ export default function HomePage() {
             <div className="flex flex-col space-y-4">
               <button
                 onClick={() => handleLanguageSelect('tr')}
-                className="w-full py-3 px-4 bg-[#141414] text-white rounded-md hover:bg-black transition-colors"
+                className="w-full py-3 px-4 bg-[#2665AF] text-white rounded-md hover:bg-black transition-colors"
               >
                 Türkçe
               </button>
               <button
                 onClick={() => handleLanguageSelect('en')}
-                className="w-full py-3 px-4 bg-[#141414] text-white rounded-md hover:bg-black transition-colors"
+                className="w-full py-3 px-4 bg-[#2665AF] text-white rounded-md hover:bg-black transition-colors"
               >
                 English
               </button>
@@ -269,7 +269,7 @@ export default function HomePage() {
                       />
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium text-[#141414]">
+                      <h3 className="text-lg font-medium text-[#2764AF]">
                         {language === 'tr' ? item.name_tr : item.name_en}
                       </h3>
                       <p className="text-gray-600 text-sm mt-1">
