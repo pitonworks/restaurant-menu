@@ -193,27 +193,28 @@ export default function AddCategoryPage() {
 
       // Alt kategorileri ekle
       if (subcategories.length > 0 && categoryData) {
-        const subcategoryInserts = subcategories
+        const validSubcategories = subcategories
           .filter(sub => sub.name_tr.trim() !== '' || sub.name_en.trim() !== '')
-          .map((sub, index) => ({
-            name_tr: sub.name_tr,
-            name_en: sub.name_en,
-            category_id: categoryData.id,
-            order: index,
-            description_tr: sub.description_tr || null,
-            description_en: sub.description_en || null,
-            image_url: sub.image_url || null
-          }))
 
-        if (subcategoryInserts.length > 0) {
-          const { error: subcategoryError } = await supabase
-            .from('subcategories')
-            .insert(subcategoryInserts)
-            .select()
+        if (validSubcategories.length > 0) {
+          // Alt kategorileri tek tek ekle
+          for (const sub of validSubcategories) {
+            const { error: subcategoryError } = await supabase
+              .from('subcategories')
+              .insert({
+                name_tr: sub.name_tr,
+                name_en: sub.name_en,
+                category_id: categoryData.id,
+                order: validSubcategories.indexOf(sub),
+                description_tr: sub.description_tr || null,
+                description_en: sub.description_en || null,
+                image_url: sub.image_url || null
+              })
 
-          if (subcategoryError) {
-            console.error('Subcategory insert error:', subcategoryError)
-            throw subcategoryError
+            if (subcategoryError) {
+              console.error('Subcategory insert error:', subcategoryError)
+              throw subcategoryError
+            }
           }
         }
       }
