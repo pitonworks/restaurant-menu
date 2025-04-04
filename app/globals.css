@@ -38,11 +38,11 @@ body {
 }
 
 .menu-item-title {
-  @apply text-xl font-medium mb-1;
+  @apply text-2xl font-medium mb-1;
 }
 
 .menu-item-description {
-  @apply text-gray-600 text-base mb-1;
+  @apply text-gray-600 text-lg mb-1;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -50,7 +50,7 @@ body {
 }
 
 .menu-item-price {
-  @apply text-black font-medium;
+  @apply text-black font-medium text-xl;
 }
 
 .menu-item-image {
@@ -59,7 +59,7 @@ body {
 
 /* Category Button Styles */
 .category-button {
-  @apply flex-none px-4 py-2 rounded-full text-base transition-colors duration-200;
+  @apply flex-none px-4 py-2 rounded-full text-lg transition-colors duration-200;
 }
 
 .category-button-active {
@@ -105,15 +105,15 @@ body {
   }
 
   .menu-item-title {
-    @apply text-lg;
+    @apply text-xl;
   }
 
   .menu-item-description {
-    @apply text-sm;
+    @apply text-base;
   }
 
   .category-button {
-    @apply px-3 py-1.5 text-sm;
+    @apply px-3 py-1.5 text-base;
   }
 }
 
