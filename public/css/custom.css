@@ -16,7 +16,7 @@
 	/* Category Cards */
 .main-wrapper {}
 		.CatCards {padding: 4rem 1.25rem;}
-		.CatCards .card {background: #FFFFFF; border-radius: 1.25rem; height: 8.5rem}
+		.CatCards .card {background: #FFFFFF; border-radius: 1.25rem; height: 10rem}
 			.CatCards .cardImg {width: 90%; height: 90%; margin: 0 auto; margin-top: -2.25rem}
 			.CatCards .cardImg img {position: relative !important; border-radius: 1.25rem;}
 			.CatCards .cardTitle {background: none; position: relative; top: -2.325rem; padding: 0; border-bottom-left-radius: 1.25rem; border-bottom-right-radius: 1.25rem; color: #000000;}
