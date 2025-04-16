@@ -30,9 +30,9 @@
 	.catTitle .subTitle {color: #141414; font-weight: 400; font-size: 1.3rem}
 	.catTitle .selectedSubCat {font-weight: 300;}
 	.subCatItems {margin: 1.25rem}
-	.itemName {font-weight: 500; color: #2764AF; font-size: 1.3rem; line-height: 1.2rem; padding: 0 1.25rem 0.25rem 0}
-	.itemDesc {color: #8a8a8a; font-size: 1.1rem; line-height: 1.25rem}
-	.itemPrice {font-weight: 700; color: #2566ae}
+	.itemName {font-weight: 500; color: #2764AF; font-size: 1.3rem; line-height: 1.6rem; padding: 0 1.25rem 0.25rem 0}
+	.itemDesc {color: #8a8a8a; font-size: 1.1rem; line-height: 1.6rem}
+	.itemPrice {font-weight: 700; color: #2566ae;}
 	.itemNameWrapper{display: flex; justify-content: space-between;}
 	.mainItem, .mainItem > div {flex: 1}
 	.itemBox {background: #FFFFFF;}
@@ -47,11 +47,11 @@
 	.itemDetailsWrapper .itemCat {font-size: 0.85rem; color: #CCCCCC;}
 	.itemDetailsWrapper {padding: 1.25rem; background: #FFFFFF}
 	.itemDetailsWrapper .topWrapper {padding-bottom: 0.25rem}
-	.itemDetailsWrapper .itemName, .itemDetailsWrapper .itemPrice {font-size: 2rem; line-height: 1.45; width: 100%; padding: 0}
-	.itemDetailsWrapper .itemDesc {font-size: 1.3rem; line-height: 1.45rem}
+	.itemDetailsWrapper .itemName, .itemDetailsWrapper .itemPrice {font-size: 2rem; line-height: 2.6rem; width: 100%; padding: 0}
+	.itemDetailsWrapper .itemDesc {font-size: 1.3rem; line-height: 1.6rem}
 	.itemDetailsWrapper .itemAllergens {padding-top: 1.25re;}
 		.itemDetailsWrapper .itemAllergens .allergenTitle {font-size: 1rem; color: #000000; padding: 1.25rem 0 0.45rem 0; font-weight: 700}
-	.itemHeader .subTitle {color: #141414; font-weight: 400; font-size: 1.3rem}
+	.itemHeader .subTitle {color: #141414; font-weight: 400; font-size: 1.3rem; line-height: 1.6rem;}
 
 	/* SimilarItems */
 	.similarItems {display: none;}
