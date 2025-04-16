@@ -21,7 +21,7 @@
 			.CatCards .cardImg img {position: relative !important; border-radius: 1.25rem;}
 			.CatCards .cardTitle {background: none; position: relative; top: -2.325rem; padding: 0; border-bottom-left-radius: 1.25rem; border-bottom-right-radius: 1.25rem; color: #000000;}
 				.cardWrapper h3 {font-size: 1.3rem; font-weight: 300; color: #2566AD; margin-top: 0.85rem}
-			.CatCards .cardLink {overflow: inherit; margin-bottom: 1rem;}
+			.CatCards .cardLink {overflow: inherit; margin-bottom: 2rem;}
 	/* Search Results */
 	.searchResults {margin: -6.75rem 1.25rem 0 1.25rem;}
 
