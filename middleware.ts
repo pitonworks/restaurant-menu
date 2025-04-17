@@ -5,40 +5,7 @@ import type { NextRequest } from 'next/server'
 export async function middleware(req: NextRequest) {
   try {
     const res = NextResponse.next()
-    const supabase = createMiddlewareClient({ 
-      req, 
-      res,
-      options: {
-        auth: {
-          persistSession: true,
-          storageKey: 'supabase.auth.token',
-          storage: {
-            getItem: (key: string) => {
-              try {
-                const value = req.cookies.get(key)?.value
-                return value ? JSON.parse(value) : null
-              } catch (error) {
-                return null
-              }
-            },
-            setItem: (key: string, value: any) => {
-              try {
-                res.cookies.set(key, JSON.stringify(value))
-              } catch (error) {
-                console.error('Error setting cookie:', error)
-              }
-            },
-            removeItem: (key: string) => {
-              try {
-                res.cookies.delete(key)
-              } catch (error) {
-                console.error('Error removing cookie:', error)
-              }
-            },
-          },
-        },
-      },
-    })
+    const supabase = createMiddlewareClient({ req, res })
     
     await supabase.auth.getSession()
 
