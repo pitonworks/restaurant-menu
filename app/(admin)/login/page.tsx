@@ -9,20 +9,39 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createSupabaseClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
+    setError(null)
+    
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting login with:', email)
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      if (error) throw error
-      router.push('/dashboard')
-    } catch (error) {
-      setError('Hatalı kullanıcı bilgileri')
+      
+      console.log('Login response:', { data, error: signInError })
+      
+      if (signInError) {
+        throw signInError
+      }
+      
+      if (data?.session) {
+        console.log('Login successful, redirecting to dashboard')
+        router.push('/dashboard')
+      } else {
+        throw new Error('No session returned')
+      }
+    } catch (error: any) {
+      console.error('Login error:', error)
+      setError(error.message || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -75,9 +94,12 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={loading}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                loading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
             >
-              Giriş Yap
+              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
             </button>
           </div>
         </form>
