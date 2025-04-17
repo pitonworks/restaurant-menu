@@ -25,70 +25,33 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form submitted')
     setLoading(true)
     setError(null)
     
     try {
-      console.log('Attempting login with:', email)
-      
-      // Test Supabase connection
-      const { data: testData, error: testError } = await supabase.from('categories').select('*').limit(1)
-      console.log('Supabase connection test:', { testData, testError })
-      
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      
-      console.log('Login response:', { data, error: signInError })
-      
-      if (signInError) {
-        throw signInError
-      }
-      
+
+      if (error) throw error
+
       if (data?.session) {
-        console.log('Login successful, preparing to redirect')
-        console.log('Current domain:', window.location.origin)
-        console.log('Parent domain:', window.parent.location.origin)
-        
-        if (isInIframe) {
-          // If in iframe, use window.parent to navigate to the same domain
-          const currentDomain = window.location.origin
-          const redirectUrl = `${currentDomain}/dashboard`
-          console.log('Redirecting to:', redirectUrl)
-          
-          // Try different redirection methods
-          try {
-            // Method 1: Direct navigation
-            window.parent.location.href = redirectUrl
-          } catch (error) {
-            console.error('Method 1 failed:', error)
-            try {
-              // Method 2: Using replace
-              window.parent.location.replace(redirectUrl)
-            } catch (error) {
-              console.error('Method 2 failed:', error)
-              try {
-                // Method 3: Using postMessage
-                window.parent.postMessage({ type: 'redirect', url: redirectUrl }, '*')
-              } catch (error) {
-                console.error('Method 3 failed:', error)
-                setError('Yönlendirme başarısız oldu. Lütfen sayfayı yenileyin.')
-              }
-            }
-          }
+        // Check if we're in an iframe
+        if (window.self !== window.top) {
+          // We're in an iframe, send a message to parent window
+          window.parent.postMessage({
+            type: 'login-success',
+            redirectUrl: '/dashboard'
+          }, 'https://qrmenu.eaglesnestcy.com')
         } else {
-          // If not in iframe, use Next.js router
-          console.log('Using Next.js router to redirect')
+          // Not in an iframe, use normal navigation
           router.push('/dashboard')
         }
-      } else {
-        throw new Error('No session returned')
       }
     } catch (error: any) {
       console.error('Login error:', error)
-      setError(error.message || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.')
+      setError(error.message)
     } finally {
       setLoading(false)
     }
