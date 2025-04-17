@@ -25,7 +25,7 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization',
+            value: 'Content-Type, Authorization, X-Requested-With',
           },
           {
             key: 'Access-Control-Allow-Credentials',
@@ -37,7 +37,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://qrmenu.eaglesnestcy.com; default-src 'self' https://qrmenu.eaglesnestcy.com; script-src 'self' 'unsafe-inline' 'unsafe-eval';",
+            value: "frame-ancestors 'self' https://qrmenu.eaglesnestcy.com; default-src 'self' https://qrmenu.eaglesnestcy.com https://restaurant-menu-flax-kappa.vercel.app; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://qrmenu.eaglesnestcy.com https://restaurant-menu-flax-kappa.vercel.app; connect-src 'self' https://qrmenu.eaglesnestcy.com https://restaurant-menu-flax-kappa.vercel.app;",
           },
         ],
       },
