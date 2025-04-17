@@ -39,18 +39,11 @@ export default function LoginPage() {
       if (data?.session) {
         // Check if we're in an iframe
         if (window.self !== window.top) {
-          try {
-            // We're in an iframe, send a message to parent window
-            window.parent.postMessage({
-              type: 'login-success',
-              session: data.session,
-              redirectUrl: '/dashboard'
-            }, 'https://qrmenu.eaglesnestcy.com')
-          } catch (err) {
-            console.error('Failed to send message to parent:', err)
-            // Fallback: Redirect within the iframe
-            router.push('/dashboard')
-          }
+          // We're in an iframe, send a message to parent window
+          window.parent.postMessage({
+            type: 'login-success',
+            redirectUrl: '/dashboard'
+          }, 'https://qrmenu.eaglesnestcy.com')
         } else {
           // Not in an iframe, use normal navigation
           router.push('/dashboard')
