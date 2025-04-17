@@ -37,7 +37,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://qrmenu.eaglesnestcy.com",
+            value: "frame-ancestors 'self' https://qrmenu.eaglesnestcy.com; default-src 'self' https://qrmenu.eaglesnestcy.com; script-src 'self' 'unsafe-inline' 'unsafe-eval';",
           },
         ],
       },

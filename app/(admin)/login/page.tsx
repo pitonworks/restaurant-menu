@@ -42,6 +42,7 @@ export default function LoginPage() {
           // We're in an iframe, send a message to parent window
           window.parent.postMessage({
             type: 'login-success',
+            session: data.session,
             redirectUrl: '/dashboard'
           }, 'https://qrmenu.eaglesnestcy.com')
         } else {
