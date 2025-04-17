@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createSupabaseClient } from '../../lib/supabase'
@@ -13,13 +13,24 @@ export default function LoginPage() {
   const router = useRouter()
   const supabase = createSupabaseClient()
 
+  useEffect(() => {
+    // Check if we're in an iframe
+    console.log('Is in iframe:', window !== window.parent)
+  }, [])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Form submitted')
     setLoading(true)
     setError(null)
     
     try {
       console.log('Attempting login with:', email)
+      
+      // Test Supabase connection
+      const { data: testData, error: testError } = await supabase.from('categories').select('*').limit(1)
+      console.log('Supabase connection test:', { testData, testError })
+      
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -63,7 +74,11 @@ export default function LoginPage() {
             Admin Paneli
           </h2>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+        <form 
+          className="mt-8 space-y-6" 
+          onSubmit={handleLogin}
+          id="login-form"
+        >
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <input
@@ -73,6 +88,7 @@ export default function LoginPage() {
                 placeholder="E-Posta Adresi"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                id="email-input"
               />
             </div>
             <div>
@@ -83,6 +99,7 @@ export default function LoginPage() {
                 placeholder="Şifre"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                id="password-input"
               />
             </div>
           </div>
@@ -98,6 +115,7 @@ export default function LoginPage() {
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
                 loading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+              id="login-button"
             >
               {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
             </button>
