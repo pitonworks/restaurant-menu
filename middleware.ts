@@ -9,6 +9,13 @@ export async function middleware(req: NextRequest) {
     
     await supabase.auth.getSession()
 
+    // Add CORS headers for iframe support
+    res.headers.set('Access-Control-Allow-Origin', '*')
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    res.headers.set('X-Frame-Options', 'ALLOW-FROM https://qrmenu.eaglesnestcy.com')
+    res.headers.set('Content-Security-Policy', "frame-ancestors 'self' https://qrmenu.eaglesnestcy.com")
+
     // Protect dashboard routes
     if (req.nextUrl.pathname.startsWith('/dashboard')) {
       const { data: { session } } = await supabase.auth.getSession()
@@ -25,5 +32,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login']
+  matcher: ['/dashboard/:path*', '/login', '/api/:path*']
 } 
