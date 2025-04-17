@@ -8,29 +8,33 @@ export async function middleware(req: NextRequest) {
     const supabase = createMiddlewareClient({ 
       req, 
       res,
-      auth: {
-        storage: {
-          getItem: (key: string) => {
-            try {
-              const value = req.cookies.get(key)?.value
-              return value ? JSON.parse(value) : null
-            } catch (error) {
-              return null
-            }
-          },
-          setItem: (key: string, value: any) => {
-            try {
-              res.cookies.set(key, JSON.stringify(value))
-            } catch (error) {
-              console.error('Error setting cookie:', error)
-            }
-          },
-          removeItem: (key: string) => {
-            try {
-              res.cookies.delete(key)
-            } catch (error) {
-              console.error('Error removing cookie:', error)
-            }
+      options: {
+        auth: {
+          persistSession: true,
+          storageKey: 'supabase.auth.token',
+          storage: {
+            getItem: (key: string) => {
+              try {
+                const value = req.cookies.get(key)?.value
+                return value ? JSON.parse(value) : null
+              } catch (error) {
+                return null
+              }
+            },
+            setItem: (key: string, value: any) => {
+              try {
+                res.cookies.set(key, JSON.stringify(value))
+              } catch (error) {
+                console.error('Error setting cookie:', error)
+              }
+            },
+            removeItem: (key: string) => {
+              try {
+                res.cookies.delete(key)
+              } catch (error) {
+                console.error('Error removing cookie:', error)
+              }
+            },
           },
         },
       },
