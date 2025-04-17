@@ -10,12 +10,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isInIframe, setIsInIframe] = useState(false)
   const router = useRouter()
   const supabase = createSupabaseClient()
 
   useEffect(() => {
     // Check if we're in an iframe
-    console.log('Is in iframe:', window !== window.parent)
+    const inIframe = window !== window.parent
+    setIsInIframe(inIframe)
+    console.log('Is in iframe:', inIframe)
   }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -44,7 +47,13 @@ export default function LoginPage() {
       
       if (data?.session) {
         console.log('Login successful, redirecting to dashboard')
-        router.push('/dashboard')
+        if (isInIframe) {
+          // If in iframe, use window.parent to navigate
+          window.parent.location.href = '/dashboard'
+        } else {
+          // If not in iframe, use Next.js router
+          router.push('/dashboard')
+        }
       } else {
         throw new Error('No session returned')
       }
