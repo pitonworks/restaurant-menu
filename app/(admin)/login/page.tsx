@@ -48,8 +48,9 @@ export default function LoginPage() {
       if (data?.session) {
         console.log('Login successful, redirecting to dashboard')
         if (isInIframe) {
-          // If in iframe, use window.parent to navigate
-          window.parent.location.href = '/dashboard'
+          // If in iframe, use window.parent to navigate to the same domain
+          const currentDomain = window.location.origin
+          window.parent.location.href = `${currentDomain}/dashboard`
         } else {
           // If not in iframe, use Next.js router
           router.push('/dashboard')
