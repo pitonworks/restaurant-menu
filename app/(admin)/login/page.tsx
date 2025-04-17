@@ -18,6 +18,8 @@ export default function LoginPage() {
     // Check if we're in an iframe
     const inIframe = window !== window.parent
     setIsInIframe(inIframe)
+    console.log('Current URL:', window.location.href)
+    console.log('Parent URL:', window.parent.location.href)
     console.log('Is in iframe:', inIframe)
   }, [])
 
@@ -46,13 +48,39 @@ export default function LoginPage() {
       }
       
       if (data?.session) {
-        console.log('Login successful, redirecting to dashboard')
+        console.log('Login successful, preparing to redirect')
+        console.log('Current domain:', window.location.origin)
+        console.log('Parent domain:', window.parent.location.origin)
+        
         if (isInIframe) {
           // If in iframe, use window.parent to navigate to the same domain
           const currentDomain = window.location.origin
-          window.parent.location.href = `${currentDomain}/dashboard`
+          const redirectUrl = `${currentDomain}/dashboard`
+          console.log('Redirecting to:', redirectUrl)
+          
+          // Try different redirection methods
+          try {
+            // Method 1: Direct navigation
+            window.parent.location.href = redirectUrl
+          } catch (error) {
+            console.error('Method 1 failed:', error)
+            try {
+              // Method 2: Using replace
+              window.parent.location.replace(redirectUrl)
+            } catch (error) {
+              console.error('Method 2 failed:', error)
+              try {
+                // Method 3: Using postMessage
+                window.parent.postMessage({ type: 'redirect', url: redirectUrl }, '*')
+              } catch (error) {
+                console.error('Method 3 failed:', error)
+                setError('Yönlendirme başarısız oldu. Lütfen sayfayı yenileyin.')
+              }
+            }
+          }
         } else {
           // If not in iframe, use Next.js router
+          console.log('Using Next.js router to redirect')
           router.push('/dashboard')
         }
       } else {
