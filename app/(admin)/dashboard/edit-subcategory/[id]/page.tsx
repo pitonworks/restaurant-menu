@@ -185,15 +185,14 @@ export default function EditSubcategoryPage({ params }: { params: { id: string }
 
       if (error) throw error
 
-      // Başarılı güncelleme mesajı göster
-      alert(language === 'tr' ? 'Alt kategori başarıyla güncellendi' : 'Subcategory updated successfully')
+      // Yükleme ekranını kapat
+      setLoading(false)
       
       // Sayfayı yenile
-      window.location.reload()
+      router.refresh()
     } catch (error: any) {
       console.error('Error updating subcategory:', error)
       setError(language === 'tr' ? 'Alt kategori güncellenirken bir hata oluştu' : 'Error updating subcategory')
-    } finally {
       setLoading(false)
     }
   }
