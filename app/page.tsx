@@ -142,8 +142,8 @@ export default function HomePage() {
 
       {/* Header */}
       <header className="top-0 bg-white border-b z-50">
-        <div className="max-w-4xl mx-auto px-8 py-4">
-          <div className="flex flex-col items-center space-y-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <div className="flex flex-col items-center space-y-2">
             <div className="flex justify-center items-center w-full">
               <div className="flex items-center">
                 <Link href="/"> 
@@ -200,7 +200,7 @@ export default function HomePage() {
             <div className="flex justify-center items-center mt-2">
               <LanguageToggle />
             </div>
-            <div className="w-full max-w-md searchBox cFullW">
+            <div className="w-full searchBox cFullW">
               <div className="relative">
                 <input
                   type="text"
@@ -221,7 +221,7 @@ export default function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 main-wrapper">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 main-wrapper">
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 lg:grid-cols-3 CatCards">
           {!searchQuery && categories.map((category) => (
             <Link
@@ -252,9 +252,9 @@ export default function HomePage() {
 
         {/* Search Results */}
         {searchQuery && (
-          <div className="mt-8 space-y-6">
+          <div className="mt-2 space-y-4">
             {searchedItems.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-4 text-gray-500">
                 {language === 'tr' ? 'Aradığınız ürün bulunamadı' : 'No items found matching your search'}
               </div>
             ) : (
@@ -262,7 +262,7 @@ export default function HomePage() {
                 <Link
                   key={item.id}
                   href={`/menu-item/${item.id}`}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center space-x-4">
                     <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
