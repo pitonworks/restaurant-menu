@@ -760,19 +760,65 @@ export default function Dashboard() {
                       </button>
                       
                       <div className="flex space-x-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                          <button
-                            key={page}
-                            onClick={() => setCurrentPage(page)}
-                            className={`w-8 h-8 rounded-md ${
-                              currentPage === page
-                                ? 'bg-[#141414] text-white'
-                                : 'bg-white text-[#141414] hover:bg-gray-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        ))}
+                        {(() => {
+                          let pages = [];
+                          if (totalPages <= 7) {
+                            // 7 veya daha az sayfa varsa hepsini göster
+                            pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+                          } else {
+                            // İlk sayfa
+                            pages.push(1);
+                            
+                            // Mevcut sayfanın etrafındaki sayfalar
+                            let start = Math.max(2, currentPage - 1);
+                            let end = Math.min(totalPages - 1, currentPage + 1);
+                            
+                            // Başlangıçta boşluk varsa
+                            if (start > 2) {
+                              pages.push('...');
+                            }
+                            
+                            // Ortadaki sayfalar
+                            for (let i = start; i <= end; i++) {
+                              pages.push(i);
+                            }
+                            
+                            // Sonda boşluk varsa
+                            if (end < totalPages - 1) {
+                              pages.push('...');
+                            }
+                            
+                            // Son sayfa
+                            pages.push(totalPages);
+                          }
+                          
+                          return pages.map((page, index) => {
+                            if (page === '...') {
+                              return (
+                                <span
+                                  key={`ellipsis-${index}`}
+                                  className="w-8 h-8 flex items-center justify-center text-gray-500"
+                                >
+                                  ...
+                                </span>
+                              );
+                            }
+                            
+                            return (
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`w-8 h-8 rounded-md ${
+                                  currentPage === page
+                                    ? 'bg-[#141414] text-white'
+                                    : 'bg-white text-[#141414] hover:bg-gray-50'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            );
+                          });
+                        })()}
                       </div>
 
                       <button
