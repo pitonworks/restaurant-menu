@@ -211,7 +211,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
       </header>
 
       {/* Menu Items */}
-      <main className="max-w-4xl mx-auto main-wrapper">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 main-wrapper">
         {selectedSubcategory === null && subcategories.length > 0 ? (
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 lg:grid-cols-3 CatCards">
             {subcategories.map((subcategory) => (
