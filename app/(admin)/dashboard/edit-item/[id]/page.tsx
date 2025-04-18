@@ -201,7 +201,20 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
 
       if (error) throw error
 
-      alert(language === 'tr' ? 'Ürün başarıyla güncellendi' : 'Product updated successfully')
+      const successMessage = language === 'tr' ? 'Ürün başarıyla güncellendi' : 'Product updated successfully'
+      alert(successMessage)
+      
+      setNameTr('')
+      setNameEn('')
+      setDescriptionTr('')
+      setDescriptionEn('')
+      setPrice('')
+      setCategoryId('')
+      setSubcategoryId('')
+      setImageUrl('')
+      setUploadedImage(null)
+      setAllergensTr('')
+      setAllergensEn('')
       
       window.location.reload()
     } catch (error: any) {

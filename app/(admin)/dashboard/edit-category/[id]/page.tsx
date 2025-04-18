@@ -301,7 +301,6 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       if (uploadedImage) {
         try {
           finalImageUrl = await uploadImage(uploadedImage)
-          console.log('Successfully uploaded image, URL:', finalImageUrl)
         } catch (uploadError: any) {
           console.error('Upload error:', uploadError)
           setError(uploadError.message)
@@ -325,7 +324,15 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       if (updateError) throw updateError
 
       // Başarılı güncelleme mesajı göster
-      alert(language === 'tr' ? 'Kategori başarıyla güncellendi' : 'Category updated successfully')
+      const successMessage = language === 'tr' ? 'Kategori başarıyla güncellendi' : 'Category updated successfully'
+      alert(successMessage)
+      
+      // Form verilerini sıfırla
+      setNameTr('')
+      setNameEn('')
+      setOrder(0)
+      setImageUrl('')
+      setUploadedImage(null)
       
       // Sayfayı yenile
       window.location.reload()
