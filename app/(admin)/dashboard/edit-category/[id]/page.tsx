@@ -296,7 +296,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
     setError('')
 
     try {
-      let finalImageUrl = imageUrl || '/default-photo.jpeg' // Eğer imageUrl boşsa varsayılan görseli kullan
+      let finalImageUrl = imageUrl || '/default-photo.jpeg'
 
       if (uploadedImage) {
         try {
@@ -324,7 +324,11 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
       if (updateError) throw updateError
 
-      router.push('/dashboard')
+      // Başarılı güncelleme mesajı göster
+      alert(language === 'tr' ? 'Kategori başarıyla güncellendi' : 'Category updated successfully')
+      
+      // Sayfayı yenile
+      window.location.reload()
     } catch (error: any) {
       console.error('Error:', error)
       setError(language === 'tr' ? 'Kategori güncellenirken bir hata oluştu' : 'Error updating category')

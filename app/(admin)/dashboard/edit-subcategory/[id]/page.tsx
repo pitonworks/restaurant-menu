@@ -185,7 +185,11 @@ export default function EditSubcategoryPage({ params }: { params: { id: string }
 
       if (error) throw error
 
-      router.push('/dashboard')
+      // Başarılı güncelleme mesajı göster
+      alert(language === 'tr' ? 'Alt kategori başarıyla güncellendi' : 'Subcategory updated successfully')
+      
+      // Sayfayı yenile
+      window.location.reload()
     } catch (error: any) {
       console.error('Error updating subcategory:', error)
       setError(language === 'tr' ? 'Alt kategori güncellenirken bir hata oluştu' : 'Error updating subcategory')
