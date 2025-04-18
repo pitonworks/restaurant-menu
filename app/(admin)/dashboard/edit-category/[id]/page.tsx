@@ -323,12 +323,14 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
       if (updateError) throw updateError
 
+      // Yükleme ekranını kapat
+      setLoading(false)
+      
       // Sayfayı yenile
       router.refresh()
     } catch (error: any) {
       console.error('Error:', error)
       setError(language === 'tr' ? 'Kategori güncellenirken bir hata oluştu' : 'Error updating category')
-    } finally {
       setLoading(false)
     }
   }

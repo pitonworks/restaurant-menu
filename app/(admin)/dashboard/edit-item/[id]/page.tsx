@@ -201,12 +201,14 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
 
       if (error) throw error
 
+      // Yükleme ekranını kapat
+      setLoading(false)
+      
       // Sayfayı yenile
       router.refresh()
     } catch (error: any) {
       console.error('Error updating menu item:', error)
       setError(language === 'tr' ? 'Ürün güncellenirken bir hata oluştu' : 'Error updating product')
-    } finally {
       setLoading(false)
     }
   }
