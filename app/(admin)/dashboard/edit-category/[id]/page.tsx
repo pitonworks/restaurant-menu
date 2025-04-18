@@ -324,7 +324,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       if (updateError) throw updateError
 
       // Sayfayı yenile
-      window.location.reload()
+      router.refresh()
     } catch (error: any) {
       console.error('Error:', error)
       setError(language === 'tr' ? 'Kategori güncellenirken bir hata oluştu' : 'Error updating category')

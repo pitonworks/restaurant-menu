@@ -202,7 +202,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
       if (error) throw error
 
       // Sayfayı yenile
-      window.location.reload()
+      router.refresh()
     } catch (error: any) {
       console.error('Error updating menu item:', error)
       setError(language === 'tr' ? 'Ürün güncellenirken bir hata oluştu' : 'Error updating product')
