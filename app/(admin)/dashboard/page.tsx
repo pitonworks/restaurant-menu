@@ -328,6 +328,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 15
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     itemId: number;
@@ -484,6 +486,17 @@ export default function Dashboard() {
     // Hiçbir filtre seçili değilse tüm ürünleri göster
     return true;
   });
+
+  // Pagination hesaplamaları
+  const totalPages = Math.ceil(filteredMenuItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = filteredMenuItems.slice(startIndex, endIndex);
+
+  // Sayfa değiştiğinde scroll'u en üste al
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   // Debug için
   console.log('Filtered Items:', {
@@ -675,22 +688,22 @@ export default function Dashboard() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                   </svg>
-                  
                 </Link>
               </div>
-              <div className="space-y-4">
-                {filteredMenuItems.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    {selectedCategory 
-                      ? 'Bu kategoride henüz ürün bulunmuyor'
-                      : 'Henüz menü öğesi eklenmemiş'
-                    }
-                  </div>
-                ) : (
-                  filteredMenuItems.map((item) => (
+              
+              {currentItems.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  {selectedCategory 
+                    ? 'Bu kategoride henüz ürün bulunmuyor'
+                    : 'Henüz menü öğesi eklenmemiş'
+                  }
+                </div>
+              ) : (
+                <>
+                  {currentItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4"
                     >
                       <div className="flex items-center space-x-4">
                         <div className="relative w-20 h-20 aspect-square rounded-lg overflow-hidden flex-shrink-0">
@@ -729,9 +742,54 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
+                  ))}
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center items-center space-x-2 mt-6">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className={`px-3 py-1 rounded-md ${
+                          currentPage === 1 
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                            : 'bg-white text-[#141414] hover:bg-gray-50'
+                        }`}
+                      >
+                        Önceki
+                      </button>
+                      
+                      <div className="flex space-x-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-8 h-8 rounded-md ${
+                              currentPage === page
+                                ? 'bg-[#141414] text-white'
+                                : 'bg-white text-[#141414] hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-1 rounded-md ${
+                          currentPage === totalPages
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-white text-[#141414] hover:bg-gray-50'
+                        }`}
+                      >
+                        Sonraki
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
