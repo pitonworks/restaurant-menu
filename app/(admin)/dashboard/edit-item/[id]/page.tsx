@@ -201,21 +201,7 @@ export default function EditItemPage({ params }: { params: { id: string } }) {
 
       if (error) throw error
 
-      const successMessage = language === 'tr' ? 'Ürün başarıyla güncellendi' : 'Product updated successfully'
-      alert(successMessage)
-      
-      setNameTr('')
-      setNameEn('')
-      setDescriptionTr('')
-      setDescriptionEn('')
-      setPrice('')
-      setCategoryId('')
-      setSubcategoryId('')
-      setImageUrl('')
-      setUploadedImage(null)
-      setAllergensTr('')
-      setAllergensEn('')
-      
+      // Sayfayı yenile
       window.location.reload()
     } catch (error: any) {
       console.error('Error updating menu item:', error)

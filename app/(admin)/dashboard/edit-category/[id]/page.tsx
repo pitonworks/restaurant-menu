@@ -323,17 +323,6 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
 
       if (updateError) throw updateError
 
-      // Başarılı güncelleme mesajı göster
-      const successMessage = language === 'tr' ? 'Kategori başarıyla güncellendi' : 'Category updated successfully'
-      alert(successMessage)
-      
-      // Form verilerini sıfırla
-      setNameTr('')
-      setNameEn('')
-      setOrder(0)
-      setImageUrl('')
-      setUploadedImage(null)
-      
       // Sayfayı yenile
       window.location.reload()
     } catch (error: any) {
