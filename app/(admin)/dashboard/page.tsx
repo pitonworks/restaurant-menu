@@ -329,6 +329,7 @@ export default function Dashboard() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchTerm, setSearchTerm] = useState('')
   const itemsPerPage = 15
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
@@ -468,24 +469,34 @@ export default function Dashboard() {
   }
 
   const filteredMenuItems = menuItems.filter(item => {
-    // Veri tipi kontrolü
+    // Önce arama filtresini uygula
+    const matchesSearch = searchTerm === '' || 
+      item.name_tr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.name_en.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description_tr?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description_en?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    // Sonra kategori filtresini uygula
     const itemCategoryId = Number(item.category_id);
     
-    // Alt kategori seçiliyse
     if (selectedSubcategory) {
-      // Eğer ürünün subcategory_id'si null ise false döndür
       if (!item.subcategory_id) return false;
       return Number(item.subcategory_id) === selectedSubcategory;
     }
     
-    // Sadece ana kategori seçiliyse
     if (selectedCategory) {
       return itemCategoryId === selectedCategory;
     }
     
-    // Hiçbir filtre seçili değilse tüm ürünleri göster
     return true;
   });
+
+  // Arama yapıldığında sayfa numarasını sıfırla
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Pagination hesaplamaları
   const totalPages = Math.ceil(filteredMenuItems.length / itemsPerPage);
@@ -690,12 +701,39 @@ export default function Dashboard() {
                   </svg>
                 </Link>
               </div>
+
+              <div className="relative mb-6">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Menü öğesi ara..."
+                  className="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
               
               {currentItems.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
-                  {selectedCategory 
-                    ? 'Bu kategoride henüz ürün bulunmuyor'
-                    : 'Henüz menü öğesi eklenmemiş'
+                  {searchTerm 
+                    ? 'Arama sonucu bulunamadı'
+                    : selectedCategory 
+                      ? 'Bu kategoride henüz ürün bulunmuyor'
+                      : 'Henüz menü öğesi eklenmemiş'
                   }
                 </div>
               ) : (
